@@ -1,13 +1,13 @@
 <template>
   <div id="app">
     <h1>GPS Tracker</h1>
-    
-    <div style="position: relative; width: 100%; height: 500px;">
+
+    <div style="position: relative; width: 100%; height: 500px">
       <GoogleMap
         :api-key="apiKey"
         :center="defaultCenter"
         :zoom="8"
-        style="width: 100%; height: 100%;"
+        style="width: 100%; height: 100%"
         @click="handleMapClick"
       >
         <!-- Device markers -->
@@ -15,20 +15,52 @@
           <Marker
             v-for="device in devices"
             :key="device.device_id"
-            :position="getDevicePosition(device)"
+            :options="{
+              position: getDevicePosition(device),
+              title: device.display_name,
+            }"
             @click="showInfoWindow(device)"
           >
             <InfoWindow
               v-if="selectedDevice === device.device_id"
-              :position="getDevicePosition(device)"
+              :options="{
+                position: getDevicePosition(device),
+              }"
               @closeclick="selectedDevice = null"
             >
               <div class="info-window">
                 <h3>{{ device.display_name }}</h3>
                 <div class="device-info">
-                  <p>Speed: {{ device.latest_device_point?.speed || 0 }} km/h</p>
-                  <p>Status: {{ device.latest_device_point?.device_state?.drive_status || 'Unknown' }}</p>
-                  <p>Updated: {{ formatTime(device.latest_device_point?.dt_tracker) }}</p>
+                  <p>
+                    Position:
+                    {{
+                      device.latest_device_point.device_point_detail.lat_lng
+                        .lat
+                    }},
+                    {{
+                      device.latest_device_point.device_point_detail.lat_lng.lng
+                    }}
+                  </p>
+                  <p>
+                    Speed:
+                    {{
+                      device.latest_device_point.device_point_detail.speed
+                        .display
+                    }}
+                  </p>
+                  <p>
+                    Heading:
+                    {{
+                      device.latest_device_point.device_point_detail.heading
+                    }}°
+                  </p>
+                  <p>
+                    Satellites:
+                    {{
+                      device.latest_device_point.device_point_detail
+                        .num_satellites
+                    }}
+                  </p>
                 </div>
               </div>
             </InfoWindow>
@@ -39,19 +71,25 @@
         <Marker
           v-for="(marker, index) in customMarkers"
           :key="index"
-          :position="marker.position"
+          :options="{
+            position: marker.position,
+          }"
           @click="showCustomMarkerInfo(index)"
         >
           <InfoWindow
             v-if="selectedCustomMarker === index"
-            :position="marker.position"
+            :options="{
+              position: marker.position,
+            }"
             @closeclick="selectedCustomMarker = null"
           >
             <div class="info-window">
               <h3>Custom Marker #{{ index + 1 }}</h3>
               <p>Lat: {{ marker.position.lat.toFixed(6) }}</p>
               <p>Lng: {{ marker.position.lng.toFixed(6) }}</p>
-              <button @click="deleteMarker(index)" class="delete-btn">Delete Marker</button>
+              <button @click="deleteMarker(index)" class="delete-btn">
+                Delete Marker
+              </button>
             </div>
           </InfoWindow>
         </Marker>
@@ -60,106 +98,132 @@
 
     <!-- Controls -->
     <div class="controls-panel">
-      <button @click="clearMarkers" class="clear-btn">Clear Custom Markers</button>
+      <button @click="clearMarkers" class="clear-btn">
+        Clear Custom Markers
+      </button>
       <span>Custom Markers: {{ customMarkers.length }}</span>
     </div>
 
     <!-- Vehicle List -->
     <div class="status-panel" v-if="devices?.length">
-      <div v-for="device in devices" :key="device.device_id" class="status-item">
+      <div
+        v-for="device in devices"
+        :key="device.device_id"
+        class="status-item"
+      >
         <span class="status-label">{{ device.display_name }}</span>
-        <span class="status-value">{{ device.latest_device_point?.device_state?.drive_status || 'Unknown' }}</span>
+        <span class="status-value">{{
+          device.latest_device_point?.device_state?.drive_status || "Unknown"
+        }}</span>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { GoogleMap, Marker, InfoWindow } from 'vue3-google-map'
+import { GoogleMap, Marker, InfoWindow } from "vue3-google-map";
 
 export default {
-  name: 'App',
+  name: "App",
   components: {
     GoogleMap,
     Marker,
-    InfoWindow
+    InfoWindow,
   },
   data() {
     return {
- apiKey: process.env.VUE_APP_GOOGLE_MAPS_API_KEY,
+      apiKey: process.env.VUE_APP_GOOGLE_MAPS_API_KEY,
       devices: [],
       selectedDevice: null,
       defaultCenter: { lat: 34.0522, lng: -118.2437 },
       customMarkers: [],
-      selectedCustomMarker: null
-    }
+      selectedCustomMarker: null,
+    };
   },
   methods: {
     getDevicePosition(device) {
-      if (device?.latest_device_point) {
+      if (device?.latest_device_point?.device_point_detail?.lat_lng) {
+        const lat = Number(
+          device.latest_device_point.device_point_detail.lat_lng.lat
+        );
+        const lng = Number(
+          device.latest_device_point.device_point_detail.lat_lng.lng
+        );
+
+        // Debug log
+        console.log("Position for device:", device.display_name, { lat, lng });
+
         return {
-          lat: device.latest_device_point.lat,
-          lng: device.latest_device_point.lng
-        }
+          lat: lat,
+          lng: lng,
+        };
       }
-      return this.defaultCenter
+      return this.defaultCenter;
     },
     showInfoWindow(device) {
-      this.selectedDevice = device.device_id
+      this.selectedDevice = device.device_id;
     },
     formatTime(timestamp) {
-      if (!timestamp) return 'Unknown'
-      return new Date(timestamp).toLocaleString()
+      if (!timestamp) return "Unknown";
+      return new Date(timestamp).toLocaleString();
     },
-      handleMapClick(event) {
+    handleMapClick(event) {
       const position = {
         lat: event.lat,
-        lng: event.lng
-      }
-      this.customMarkers.push({ position })
+        lng: event.lng,
+      };
+      this.customMarkers.push({ position });
     },
     showCustomMarkerInfo(index) {
-      this.selectedCustomMarker = index
-      this.selectedDevice = null // Close device info window if open
+      this.selectedCustomMarker = index;
+      this.selectedDevice = null; // Close device info window if open
     },
     deleteMarker(index) {
-      this.customMarkers.splice(index, 1)
-      this.selectedCustomMarker = null
+      this.customMarkers.splice(index, 1);
+      this.selectedCustomMarker = null;
     },
     clearMarkers() {
-      this.customMarkers = []
-      this.selectedCustomMarker = null
+      this.customMarkers = [];
+      this.selectedCustomMarker = null;
     },
     async fetchDeviceData() {
       try {
-        const response = await fetch('http://localhost:8080/api/v1/devices')
-        if (!response.ok) throw new Error('Network response was not ok')
-        const data = await response.json()
-        
+        const response = await fetch("http://localhost:8080/api/v1/devices");
+        if (!response.ok) throw new Error("Network response was not ok");
+        const data = await response.json();
+
+        console.log("Response data:", data);
+
         // Set devices from the 'devices' array in the response
         if (data && data.devices) {
-          this.devices = data.devices
-          
+          this.devices = data.devices;
+          console.log("Devices:", this.devices);
+
           // Update center to first device's location if available
           if (this.devices.length > 0 && this.devices[0].latest_device_point) {
-            this.defaultCenter = this.getDevicePosition(this.devices[0])
+            console.log(
+              "First device position:",
+              this.getDevicePosition(this.devices[0])
+            );
+
+            this.defaultCenter = this.getDevicePosition(this.devices[0]);
           }
         }
       } catch (error) {
-        console.error('Error fetching device data:', error)
+        console.error("Error fetching device data:", error);
       }
-    }
+    },
   },
   mounted() {
-    this.fetchDeviceData()
-    setInterval(this.fetchDeviceData, 5000)
+    this.fetchDeviceData();
+    setInterval(this.fetchDeviceData, 5000);
   },
   beforeUnmount() {
     if (this.pollingInterval) {
-      clearInterval(this.pollingInterval)
+      clearInterval(this.pollingInterval);
     }
-  }
-}
+  },
+};
 </script>
 
 <style>
