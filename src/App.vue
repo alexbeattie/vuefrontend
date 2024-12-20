@@ -1,6 +1,7 @@
 <template>
   <div class="flex h-screen">
     <!-- Sidebar -->
+
     <div class="w-80 bg-white border-r border-gray-200 overflow-y-auto">
       <div class="p-4">
         <h2 class="text-lg font-semibold mb-4">Devices</h2>
@@ -16,6 +17,9 @@
           >
             <option value="active">Most Active</option>
             <option value="inactive">Least Active</option>
+            <option value="speed">Speed</option>
+            <option value="distance">Distance</option>
+            <option value="signal">Signal Strength</option>
           </select>
         </div>
 
@@ -28,98 +32,356 @@
             <label class="flex items-center">
               <input
                 type="checkbox"
-                v-model="filters.ignitionOn"
+                v-model="filters.overSpeedLimit"
                 class="rounded text-blue-600"
               />
-              <span class="ml-2">Ignition On</span>
+              <span class="ml-2">Over Speed Limit</span>
             </label>
             <label class="flex items-center">
               <input
                 type="checkbox"
-                v-model="filters.ignitionOff"
+                v-model="filters.lowBattery"
                 class="rounded text-blue-600"
               />
-              <span class="ml-2">Ignition Off</span>
+              <span class="ml-2">Low Battery</span>
             </label>
           </div>
         </div>
 
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2"
+            >Display Settings</label
+          >
+          <div class="space-y-2">
+            <label
+              class="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
+            >
+              <span class="text-sm text-gray-600">Show Devices on Map</span>
+              <input
+                type="checkbox"
+                v-model="mapSettings.showDevices"
+                class="rounded text-blue-600"
+                @change="
+                  updateSettings({
+                    key: 'showDevices',
+                    value: mapSettings.showDevices,
+                  })
+                "
+              />
+            </label>
+          </div>
+          <!-- Add this after your existing filter controls in the sidebar -->
+         <div class="mb-4">
+    <label class="block text-sm font-medium text-gray-700 mb-2">Device Status</label>
+    <div class="space-y-2">
+      <!-- Moving Devices Toggle -->
+      <label class="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+        <span class="text-sm text-gray-600">Moving Devices</span>
+        <input
+          type="checkbox"
+          v-model="mapSettings.showMoving"
+          class="rounded text-blue-600"
+          @change="updateSettings({
+            key: 'showMoving',
+            value: mapSettings.showMoving
+          })"
+        />
+      </label>
+      
+      <!-- Stopped Devices Toggle -->
+      <label class="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+        <span class="text-sm text-gray-600">Stopped Devices</span>
+        <input
+          type="checkbox"
+          v-model="mapSettings.showStopped"
+          class="rounded text-blue-600"
+          @change="updateSettings({
+            key: 'showStopped',
+            value: mapSettings.showStopped
+          })"
+        />
+      </label>
+      
+      <!-- Offline Devices Toggle -->
+      <label class="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+        <span class="text-sm text-gray-600">Offline Devices</span>
+        <input
+          type="checkbox"
+          v-model="mapSettings.showOffline"
+          class="rounded text-blue-600"
+          @change="updateSettings({
+            key: 'showOffline',
+            value: mapSettings.showOffline
+          })"
+        />
+      </label>
+    </div>
+  </div>
+</div>
         <!-- Device List -->
         <div class="space-y-2">
-          <div
-            v-for="device in sortedAndFilteredDevices"
-            :key="device.device_id"
-            @click="handleSidebarDeviceClick(device)"
-            class="p-3 rounded-lg cursor-pointer"
-            :class="{
-              'bg-blue-50 border-blue-500': isDeviceSelected(device.device_id),
-              'hover:bg-gray-50 border-transparent': !isDeviceSelected(
-                device.device_id
-              ),
-              border: true,
-            }"
-          >
-            <div class="flex justify-between items-center">
-              <span class="font-medium">{{ device.display_name }}</span>
-              <span
-                class="px-2 py-1 rounded-full text-xs"
-                :class="getDeviceStatus(device).className"
+          <!-- Active/Moving Devices -->
+<div v-if="deviceGroups.active?.length" class="mb-4">
+            <h3 class="text-sm font-medium text-gray-500 px-3 mb-2">
+              Moving ({{ deviceGroups.active.length }})
+            </h3>
+            <div class="bg-green-50 rounded-lg p-2 space-y-2">
+              <div
+                v-for="device in deviceGroups.active"
+                :key="device.device_id"
+                @click="handleSidebarDeviceClick(device)"
+                class="p-3 rounded-lg cursor-pointer border"
+                :class="{
+                  'bg-blue-50 border-blue-500': isDeviceSelected(
+                    device.device_id
+                  ),
+                  'hover:bg-green-100 border-transparent': !isDeviceSelected(
+                    device.device_id
+                  ),
+                }"
               >
-                {{ getDeviceStatus(device).status }}
-              </span>
-            </div>
-            <div class="text-sm text-gray-500 mt-1">
-              <!-- Show address if online, otherwise show last seen time -->
-              <template
-                v-if="getDeviceConnectivityStatus(device).status === 'Online'"
-              >
-                <div>{{ getAddressForDevice(device.device_id) }}</div>
-              </template>
-              <template v-else>
-                <div>Last seen: {{ formatTimeAgo(device.updated_at) }}</div>
-              </template>
-              <div class="flex items-center space-x-2">
-                <template
-                  v-if="
-                    device?.latest_device_point?.device_point_detail
-                      ?.cell_signal
-                  "
-                >
-                  <div class="flex items-center">
-                    <span class="text-xs"
-                      >Signal:
-                      {{
-                        device.latest_device_point.device_point_detail
-                          .cell_signal
-                      }}%</span
-                    >
-                    <div class="ml-1 w-4 h-2.5 bg-gray-200 rounded">
-                      <div
-                        class="h-full rounded"
-                        :class="{
-                          'bg-green-500':
-                            device.latest_device_point.device_point_detail
-                              .cell_signal > 70,
-                          'bg-yellow-500':
-                            device.latest_device_point.device_point_detail
-                              .cell_signal > 30 &&
-                            device.latest_device_point.device_point_detail
-                              .cell_signal <= 70,
-                          'bg-red-500':
-                            device.latest_device_point.device_point_detail
-                              .cell_signal <= 30,
-                        }"
-                        :style="{
-                          width: `${device.latest_device_point.device_point_detail.cell_signal}%`,
-                        }"
-                      ></div>
-                    </div>
+                <div class="flex justify-between items-center">
+                  <span class="font-medium">{{ device.display_name }}</span>
+                  <span
+                    class="px-2 py-1 rounded-full text-xs"
+                    :class="getDeviceStatus(device).className"
+                  >
+                    {{ getDeviceStatus(device).status }}
+                  </span>
+                </div>
+                <div class="text-sm text-gray-500 mt-1">
+                  <div class="truncate max-w-xs">
+                    {{ getAddressForDevice(device.device_id) }}
                   </div>
-                </template>
+                  <div class="truncate max-w-xs">
+                    Last seen: {{ getDeviceStatus(device).time }}
+                  </div>
+                  <div class="flex items-center">
+                    <span class="text-xs">
+                      Speed: {{ kmToMph(device.latest_device_point.speed) }}
+                    </span>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <template
+                      v-if="device?.latest_device_point?.params?.gpslev"
+                    >
+                      <div class="flex items-center">
+                        <span class="text-xs"
+                          >GPS:
+                          {{ device.latest_device_point.params.gpslev }}</span
+                        >
+                        <div class="ml-1 w-4 h-2.5 bg-gray-200 rounded">
+                          <div
+                            class="h-full rounded"
+                            :class="{
+                              'bg-green-500':
+                                parseInt(
+                                  device.latest_device_point.params.gpslev
+                                ) >= 8,
+                              'bg-yellow-500':
+                                parseInt(
+                                  device.latest_device_point.params.gpslev
+                                ) >= 4 &&
+                                parseInt(
+                                  device.latest_device_point.params.gpslev
+                                ) < 8,
+                              'bg-red-500':
+                                parseInt(
+                                  device.latest_device_point.params.gpslev
+                                ) < 4,
+                            }"
+                            :style="{
+                              width: `${
+                                (parseInt(
+                                  device.latest_device_point.params.gpslev
+                                ) /
+                                  12) *
+                                100
+                              }%`,
+                            }"
+                          ></div>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stopped Devices -->
+<div v-if="deviceGroups.stopped?.length" class="mb-4">
+            <h3 class="text-sm font-medium text-gray-500 px-3 mb-2">
+              Stopped ({{ deviceGroups.stopped.length }})
+            </h3>
+            <div class="bg-gray-50 rounded-lg p-2 space-y-2">
+              <div
+                v-for="device in deviceGroups.stopped"
+                :key="device.device_id"
+                @click="handleSidebarDeviceClick(device)"
+                class="p-3 rounded-lg cursor-pointer border"
+                :class="{
+                  'bg-blue-50 border-blue-500': isDeviceSelected(
+                    device.device_id
+                  ),
+                  'hover:bg-gray-100 border-transparent': !isDeviceSelected(
+                    device.device_id
+                  ),
+                }"
+              >
+                <div class="flex justify-between items-center">
+                  <span class="font-medium">{{ device.display_name }}</span>
+                  <span
+                    class="px-2 py-1 rounded-full text-xs"
+                    :class="getDeviceStatus(device).className"
+                  >
+                    {{ getDeviceStatus(device).status }}
+                  </span>
+                </div>
+                <div class="text-sm text-gray-500 mt-1">
+                  <div class="truncate max-w-xs">
+                    {{ getAddressForDevice(device.device_id) }}
+                  </div>
+
+                  <div class="truncate max-w-xs">
+                    Last seen: {{ getDeviceStatus(device).time }}
+                  </div>
+
+                  <div class="flex items-center space-x-2">
+                    <template
+                      v-if="device?.latest_device_point?.params?.gpslev"
+                    >
+                      <div class="flex items-center">
+                        <span class="text-xs"
+                          >GPS:
+                          {{ device.latest_device_point.params.gpslev }}</span
+                        >
+                        <div class="ml-1 w-4 h-2.5 bg-gray-200 rounded">
+                          <div
+                            class="h-full rounded"
+                            :class="{
+                              'bg-green-500':
+                                parseInt(
+                                  device.latest_device_point.params.gpslev
+                                ) >= 8,
+                              'bg-yellow-500':
+                                parseInt(
+                                  device.latest_device_point.params.gpslev
+                                ) >= 4 &&
+                                parseInt(
+                                  device.latest_device_point.params.gpslev
+                                ) < 8,
+                              'bg-red-500':
+                                parseInt(
+                                  device.latest_device_point.params.gpslev
+                                ) < 4,
+                            }"
+                            :style="{
+                              width: `${
+                                (parseInt(
+                                  device.latest_device_point.params.gpslev
+                                ) /
+                                  12) *
+                                100
+                              }%`,
+                            }"
+                          ></div>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Inactive/Offline Devices -->
+<div v-if="deviceGroups.inactive?.length" class="mb-4">
+            <h3 class="text-sm font-medium text-gray-500 px-3 mb-2">
+              Offline ({{ deviceGroups.inactive.length }})
+            </h3>
+            <div class="bg-red-50 rounded-lg p-2 space-y-2">
+              <div
+                v-for="device in deviceGroups.inactive"
+                :key="device.device_id"
+                @click="handleSidebarDeviceClick(device)"
+                class="p-3 rounded-lg cursor-pointer border"
+                :class="{
+                  'bg-blue-50 border-blue-500': isDeviceSelected(
+                    device.device_id
+                  ),
+                  'hover:bg-red-100 border-transparent': !isDeviceSelected(
+                    device.device_id
+                  ),
+                }"
+              >
+                <div class="flex justify-between items-center">
+                  <span class="font-medium">{{ device.display_name }}</span>
+                  <span
+                    class="px-2 py-1 rounded-full text-xs"
+                    :class="getDeviceStatus(device).className"
+                  >
+                    {{ getDeviceStatus(device).status }}
+                  </span>
+                </div>
+                <div class="text-sm text-gray-500 mt-1">
+                  <div class="truncate max-w-xs">
+                    {{ getAddressForDevice(device.device_id) }}
+                  </div>
+
+                  <div class="truncate max-w-xs">
+                    Last seen: {{ getDeviceStatus(device).time }}
+                  </div>
+
+                  <div class="flex items-center space-x-2">
+                    <template
+                      v-if="device?.latest_device_point?.params?.gpslev"
+                    >
+                      <div class="flex items-center">
+                        <span class="text-xs"
+                          >GPS:
+                          {{ device.latest_device_point.params.gpslev }}</span
+                        >
+                        <div class="ml-1 w-4 h-2.5 bg-gray-200 rounded">
+                          <div
+                            class="h-full rounded"
+                            :class="{
+                              'bg-green-500':
+                                parseInt(
+                                  device.latest_device_point.params.gpslev
+                                ) >= 8,
+                              'bg-yellow-500':
+                                parseInt(
+                                  device.latest_device_point.params.gpslev
+                                ) >= 4 &&
+                                parseInt(
+                                  device.latest_device_point.params.gpslev
+                                ) < 8,
+                              'bg-red-500':
+                                parseInt(
+                                  device.latest_device_point.params.gpslev
+                                ) < 4,
+                            }"
+                            :style="{
+                              width: `${
+                                (parseInt(
+                                  device.latest_device_point.params.gpslev
+                                ) /
+                                  12) *
+                                100
+                              }%`,
+                            }"
+                          ></div>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
+        <!-- End of Device List -->
       </div>
     </div>
     <!-- Main Content -->
@@ -159,111 +421,70 @@
           class="w-full h-full"
           @ready="initializeLayers"
         >
-          <template v-if="hasDevices">
-            <template v-for="device in devices" :key="device.device_id">
-              <Marker
-                :options="{
-                  position: getDevicePosition(device),
-                  title: device.display_name,
-                  icon: getMarkerIcon(device),
-                  optimized: false,
-                  visible: true, // Force visible for debugging
-                }"
-                @click="handleMarkerClick(device)"
-                @mount="(marker) => onMarkerMount(device.device_id, marker)"
-              />
-
-              <InfoWindow
-                v-if="isDeviceSelected(device.device_id)"
-                :options="{
-                  position: getDevicePosition(device),
-                }"
-                @closeclick="handleInfoWindowClose"
-              >
-                <div class="info-window">
-                  <h3>{{ device.display_name }}</h3>
-                  <div class="device-info">
-                    <div class="text-sm text-gray-500 mt-1">
-                      <div>{{ getAddressForDevice(device.device_id) }}</div>
-                      <div>
-                        Last updated: {{ formatTimeAgo(device.updated_at) }}
-                      </div>
-                    </div>
-                    <p>
-                      Speed:
-                      {{
-                        kmToMph(
-                          device.latest_device_point.device_point_detail.speed
-                            .display
-                        )
-                      }}
-                    </p>
-                    <p>
-                      Heading:
-                      {{
-                        device.latest_device_point.device_point_detail.heading
-                      }}°
-                    </p>
-                    <p>
-                      Satellites:
-                      {{
-                        device.latest_device_point.device_point_detail
-                          .num_satellites
-                      }}
-                    </p>
-                    <p>
-                      Online:
-                      {{ device.latest_device_point.online }}
-                    </p>
-                    <p>
-                      Status:
-                      {{ getDeviceStatus(device).status }} for
-                      {{ getDeviceStatus(device).time }}
-                    </p>
-                  </div>
-                </div>
-              </InfoWindow>
-            </template>
-          </template>
+          <MapSettings
+            v-if="showMapSettings"
+            :modelValue="mapSettings"
+            @update:modelValue="updateSettings"
+            @close="showMapSettings = false"
+          />
+          <!-- Only render markers if showDevices is true -->
+         <template v-if="hasDevices && mapSettings.showDevices">
+  <template v-for="device in devices" :key="device.device_id">
+    <AdvancedMarker
+      :position="getDevicePosition(device)"
+      :title="device.display_name"
+      :device="device"
+      @click="handleMarkerClick(device)"
+      @register-marker="registerMarker"
+      @unregister-marker="unregisterMarker"
+    />
+    
+    <CustomInfoWindow
+      v-if="isDeviceSelected(device.device_id) && clickedDeviceId === device.device_id"
+      :device="device"
+      :position="getDevicePosition(device)"
+      @closeclick="handleInfoWindowClose"
+    />
+  </template>
+</template>
         </GoogleMap>
       </div>
     </div>
-
-    <!-- Map Settings Panel -->
-    <Transition
-      enter-active-class="transition ease-out duration-200"
-      enter-from-class="opacity-0 translate-x-2"
-      enter-to-class="opacity-100 translate-x-0"
-      leave-active-class="transition ease-in duration-150"
-      leave-from-class="opacity-100 translate-x-0"
-      leave-to-class="opacity-0 translate-x-2"
-    >
-      <MapSettings
-        v-if="showMapSettings"
-        :modelValue="mapSettings"
-        @update:modelValue="updateSettings"
-        @close="showMapSettings = false"
-      />
-    </Transition>
   </div>
 </template>
 
 <script>
 // Import required dependencies and components
 import { mapState, mapActions, mapGetters } from "vuex";
-import { GoogleMap, Marker, InfoWindow } from "vue3-google-map";
-import MapSettings from "./MapSettings.vue";
+import { computed } from "vue";
+import { GoogleMap } from "vue3-google-map";
+import MapSettings from "./MapSettings.vue"; // Make sure path is correct
+import AdvancedMarker from "./components/AdvancedMarker.vue";
+import CustomInfoWindow from "./components/CustomInfoWindow.vue";
+
+import { formatTimeAgo, kmToMph, getDeviceMetrics } from "@/utils";
+import { getDeviceStatus } from "./utils/deviceStatus";
+
+import _ from "lodash";
 
 export default {
   name: "App",
 
   components: {
     GoogleMap,
-    Marker,
-    InfoWindow,
     MapSettings,
+    AdvancedMarker,
+    CustomInfoWindow,
   },
+  provide() {
+    return {
+      getDeviceStatus: this.getDeviceStatus,
+      mapSettings: computed(() => this.mapSettings),  // Make it reactive
 
+      getAddressForDevice: this.getAddressForDevice,
+      kmToMph: this.kmToMph,
+    };
+  },
   data() {
     return {
       // Keep only component-specific state here
@@ -276,14 +497,16 @@ export default {
         { value: "voltage", label: "Battery Voltage" },
         { value: "signal", label: "Signal Strength" },
       ],
+
       filters: {
         ignitionOn: false,
         ignitionOff: false,
         overSpeedLimit: false,
         lowBattery: false, // < 12V
         poorSignal: false, // < 8 satellites
-        driving: false,
-        stopped: false,
+        // showMoving: true,
+        // showStopped: true,
+        // showOffline: true, // Add this new filter
       },
       apiKey: process.env.VUE_APP_GOOGLE_MAPS_API_KEY,
       defaultCenter: { lat: 34.0522, lng: -118.2437 },
@@ -300,6 +523,8 @@ export default {
 
       animationQueue: new Map(),
       markerRefs: new Map(),
+      map: null, // Add this
+      clickedDeviceId: null,
     };
   },
   // Map Vuex state and getters to component
@@ -319,131 +544,200 @@ export default {
     }),
 
     // Device getters
+
     ...mapGetters("devices", {
       getAddressForDevice: "getAddressForDevice",
       isDeviceSelected: "isDeviceSelected",
       hasDevices: "hasDevices", // Add this line
     }),
-    sortedAndFilteredDevices() {
-  let filteredDevices = [...this.devices];
-  
-  // Apply filters
-  filteredDevices = filteredDevices.filter(device => {
-    const metrics = this.getDeviceMetrics(device);
-    
-    if (this.filters.ignitionOn && !metrics.ignitionOn) return false;
-    if (this.filters.ignitionOff && metrics.ignitionOn) return false;
-    if (this.filters.overSpeedLimit && !metrics.isOverSpeedLimit) return false;
-    if (this.filters.lowBattery && metrics.batteryVoltage >= 12) return false;
-    if (this.filters.poorSignal && metrics.signalStrength >= 8) return false;
-    if (this.filters.driving && metrics.driveStatus !== 'driving') return false;
-    if (this.filters.stopped && metrics.driveStatus !== 'stopped') return false;
-    
+    deviceStatuses() {
+      return (device) => {
+        const status = getDeviceStatus(device);
+        return {
+          isOffline: status.status === "Offline",
+          isMoving: status.status === "Moving",
+          isStopped: status.status === "Stopped",
+          hasSignal: device?.latest_device_point?.params?.gpslev >= 4,
+        };
+      };
+    },
+    deviceGroups() {
+     const filteredDevices = this.sortedAndFilteredDevices.filter(device => {
+    const status = this.getDeviceStatus(device);
+    if (status.status === "Moving" && !this.mapSettings.showMoving) return false;
+    if (status.status === "Stopped" && !this.mapSettings.showStopped) return false;
+    if (status.status === "Offline" && !this.mapSettings.showOffline) return false;
     return true;
   });
-  
-  // Apply sorting
-  filteredDevices.sort((a, b) => {
-    const metricsA = this.getDeviceMetrics(a);
-    const metricsB = this.getDeviceMetrics(b);
-    
-    switch (this.sortBy) {
-      case 'speed':
-        return metricsB.currentSpeed - metricsA.currentSpeed;
-      case 'distance':
-        return metricsB.tripDistance - metricsA.tripDistance;
-      case 'voltage':
-        return metricsB.batteryVoltage - metricsA.batteryVoltage;
-      case 'signal':
-        return metricsB.signalStrength - metricsA.signalStrength;
-      // ... existing active/inactive cases
-    }
+
+  return _.groupBy(filteredDevices, (device) => {
+    const status = this.getDeviceStatus(device);
+    if (status.status === "Moving") return "active";
+    if (status.status === "Stopped") return "stopped";
+    return "inactive";
   });
-  
-  return filteredDevices;
-},
-  },
-  // Watch for changes in Vuex state
-  watch: {
-    "mapSettings.showTraffic": {
-      async handler(newValue) {
-        try {
-          // Make sure the map is ready before doing anything
-          if (!this.$refs.map?.map) {
-            console.log(
-              "Map not ready yet, will try again when map initializes"
-            );
-            return;
+    },
+    sortedAndFilteredDevices() {
+  let filteredDevices = [...this.devices];
+
+  // Apply filters
+  filteredDevices = filteredDevices.filter((device) => {
+    const metrics = this.getDeviceMetrics(device);
+    const status = this.getDeviceStatus(device);
+
+    // First check device status filters using mapSettings
+    switch (status.status) {
+      case "Moving":
+        if (!this.mapSettings.showMoving) return false;
+        break;
+      case "Stopped":
+        if (!this.mapSettings.showStopped) return false;
+        break;
+      case "Offline":
+        if (!this.mapSettings.showOffline) return false;
+        break;
+    }
+
+        if (this.filters.ignitionOn && !metrics.ignitionOn) return false;
+        if (this.filters.ignitionOff && metrics.ignitionOn) return false;
+        if (this.filters.overSpeedLimit && !metrics.isOverSpeedLimit)
+          return false;
+        if (this.filters.lowBattery && metrics.batteryVoltage >= 12)
+          return false;
+        if (this.filters.poorSignal && metrics.signalStrength >= 8)
+          return false;
+        if (this.filters.driving && metrics.driveStatus !== "driving")
+          return false;
+        if (this.filters.stopped && metrics.driveStatus !== "stopped")
+          return false;
+
+        return true;
+      });
+
+      // Apply sorting
+      filteredDevices.sort((a, b) => {
+        // Define variables outside switch
+        let timeA, timeB, statusA, statusB;
+
+        switch (this.sortBy) {
+          case "active": {
+            statusA = this.getDeviceStatus(a);
+            statusB = this.getDeviceStatus(b);
+
+            if (statusA.status !== "Offline" && statusB.status === "Offline")
+              return -1;
+            if (statusA.status === "Offline" && statusB.status !== "Offline")
+              return 1;
+
+            timeA = new Date(a.latest_device_point?.dt_tracker || 0);
+            timeB = new Date(b.latest_device_point?.dt_tracker || 0);
+            return timeB - timeA;
           }
 
-          if (newValue) {
-            // User wants to show traffic
-            await this.initializeTrafficLayer();
-          } else {
-            // User wants to hide traffic
-            this.removeTrafficLayer();
+          case "inactive": {
+            statusA = this.getDeviceStatus(a);
+            statusB = this.getDeviceStatus(b);
+
+            if (statusA.status !== "Offline" && statusB.status === "Offline")
+              return 1;
+            if (statusA.status === "Offline" && statusB.status !== "Offline")
+              return -1;
+
+            timeA = new Date(a.latest_device_point?.dt_tracker || 0);
+            timeB = new Date(b.latest_device_point?.dt_tracker || 0);
+            return timeA - timeB; // Changed from inactiveTimeA/B to timeA/B
           }
-        } catch (error) {
-          console.error("Error handling traffic toggle:", error);
-          // If something goes wrong, revert the setting
-          await this.updateSetting({
-            key: "showTraffic",
-            value: false,
-          });
+
+          case "speed": {
+            const speedA = parseFloat(a.latest_device_point?.speed || 0);
+            const speedB = parseFloat(b.latest_device_point?.speed || 0);
+            return speedB - speedA;
+          }
+
+          case "distance": {
+            const distanceA = parseFloat(
+              a.latest_device_point?.params?.odo_trip_meter || 0
+            );
+            const distanceB = parseFloat(
+              b.latest_device_point?.params?.odo_trip_meter || 0
+            );
+            return distanceB - distanceA;
+          }
+
+          case "signal": {
+            const signalA = parseInt(
+              a.latest_device_point?.params?.gpslev || 0
+            );
+            const signalB = parseInt(
+              b.latest_device_point?.params?.gpslev || 0
+            );
+            return signalB - signalA;
+          }
+
+          default:
+            return 0;
         }
-      },
+      });
+
+      return filteredDevices;
     },
   },
-
-  // watch: {
-  //   mapSettings: {
-  //     async handler(newSettings, oldSettings) {
-  //       if (JSON.stringify(newSettings) === JSON.stringify(oldSettings)) return; // No change
-
-  //       if (!this.googleMapsLoaded) {
-  //         const isReady = await this.waitForGoogleMaps();
-  //         if (!isReady) return;
-  //       }
-
-  //       try {
-  //         // Perform updates only when necessary
-  //         if (newSettings.mapType !== oldSettings.mapType) {
-  //           this.$refs.map.map.setMapTypeId(newSettings.mapType);
-  //         }
-
-  //         if (newSettings.showTraffic !== oldSettings.showTraffic) {
-  //           await this.updateMapLayers();
-  //         }
-
-  //         this.updateMarkerVisibility();
-  //         this.saveMapSettings();
-  //       } catch (error) {
-  //         console.error("Error applying map settings:", error);
-  //       }
-  //     },
-  //     deep: true,
-  //   },
-  // },
-  // computed: {
-  // ...mapState('mapSettings', {
-  //     mapSettings: state => state.settings,
-  //     isMapInitialized: state => state.isMapInitialized,
-  //     googleMapsLoaded: state => state.googleMapsLoaded
-  //   }),
-
-  //   ...mapState('devices', {
-  //     devices: state => state.devices,
-  //     selectedDevice: state => state.selectedDevice,
-  //     addressMap: state => state.addressMap
-  //   }),
-
-  //   ...mapGetters('devices', [
-  //     'getDeviceById',
-  //     'getAddressForDevice',
-  //     'isDeviceSelected'
-  //   ])
-  // },
+ watch: {
+  'mapSettings.showMoving'() {
+    this.updateMarkersVisibility();
+  },
+  'mapSettings.showStopped'() {
+    this.updateMarkersVisibility();
+  },
+  'mapSettings.showOffline'() {
+    this.updateMarkersVisibility();
+  },
+  'mapSettings.showDevices'() {
+    this.updateMarkersVisibility(); // Use the same method for all visibility toggles
+  },
+  'mapSettings.showTraffic': {
+    handler() {
+      this.$nextTick(() => {
+        if (this.$refs.map?.map) {
+          this.toggleTrafficLayer();
+        }
+      });
+    },
+    immediate: true,
+  },
+},
   methods: {
+    registerMarker(deviceId, marker) {
+      this.markerRefs.set(deviceId, marker);
+    },
+
+    unregisterMarker(deviceId) {
+      this.markerRefs.delete(deviceId);
+    },
+updateMarkersVisibility() {
+  this.devices.forEach(device => {
+    const marker = this.markerRefs.get(device.device_id);
+    if (!marker) return;
+
+    const status = this.getDeviceStatus(device);
+    let shouldShow = false;
+
+    // First check if devices are shown at all
+    if (this.mapSettings.showDevices) {
+      // Then check individual status toggles
+      if (status.status === "Moving" && this.mapSettings.showMoving) shouldShow = true;
+      if (status.status === "Stopped" && this.mapSettings.showStopped) shouldShow = true;
+      if (status.status === "Offline" && this.mapSettings.showOffline) shouldShow = true;
+    }
+
+    marker.setVisible(shouldShow);
+  });
+    },
+    updateVisibility(visible) {
+      if (this.marker) {
+        this.marker.setVisible(visible);
+      }
+    },
     // Map Vuex actions to methods
     ...mapActions("mapSettings", [
       "initializeMap",
@@ -457,6 +751,26 @@ export default {
       "updateAddress",
       "setWebsocketConnected",
     ]),
+    getDeviceStatus, // Add this line
+    initializeMarker() {
+      if (!window.google?.maps || !this.$parent.map) return;
+
+      const status = this.$parent.getDeviceStatus(this.device);
+      const filters = this.$parent.filters;
+
+      let isVisible = false;
+      if (status.status === "Moving") isVisible = filters.showMoving;
+      if (status.status === "Stopped") isVisible = filters.showStopped;
+      if (status.status === "Offline") isVisible = filters.showOffline;
+
+      this.marker = new window.google.maps.Marker({
+        position: this.position,
+        title: this.title,
+        map: this.$parent.map,
+        icon: this.getMarkerIcon(),
+        visible: isVisible,
+      });
+    },
     isDeviceActive(device) {
       return (
         parseFloat(
@@ -465,50 +779,36 @@ export default {
       );
     },
 
-    getDeviceConnectivityStatus(device) {
-      if (!device?.latest_device_point?.online) {
-        return {
-          status: "Offline",
-          className: "bg-red-100 text-red-800",
-        };
-      }
-
-      const signalStrength =
-        device?.latest_device_point?.device_point_detail?.cell_signal;
-      if (!signalStrength || signalStrength < 1) {
-        return {
-          status: "No Signal",
-          className: "bg-yellow-100 text-yellow-800",
-        };
-      }
-
-      return {
-        status: "Online",
-        className: "bg-green-100 text-green-800",
-      };
-    },
-
-    formatTimeAgo(timestamp) {
-      const date = new Date(timestamp);
-      const now = new Date();
-      const seconds = Math.floor((now - date) / 1000);
-
-      if (seconds < 60) return "just now";
-
-      const minutes = Math.floor(seconds / 60);
-      if (minutes < 60) return `${minutes}m ago`;
-
-      const hours = Math.floor(minutes / 60);
-      if (hours < 24) return `${hours}h ago`;
-
-      const days = Math.floor(hours / 24);
-      return `${days}d ago`;
-    },
+    formatTimeAgo,
+    kmToMph,
+    getDeviceMetrics,
 
     // Map initialization methods
     async initializeLayers() {
       try {
+        if (!window.google?.maps) {
+          throw new Error("Google Maps not loaded");
+        }
+
         await this.initializeMap();
+        this.map = this.$refs.map.map;
+
+        // Add map click listener with event parameter
+        if (this.map) {
+          this.map.addListener("click", (event) => {
+            // Check if the click was on a marker
+            if (event.placeId || event.vertex || event.edge) {
+              // Click was on a map feature (like a marker), don't close
+              return;
+            }
+
+            // Close any open info window
+            if (this.clickedDeviceId) {
+              this.clickedDeviceId = null;
+              this.selectDevice(null);
+            }
+          });
+        }
 
         if (this.mapSettings.showTraffic) {
           await this.initializeTrafficLayer();
@@ -517,39 +817,24 @@ export default {
         console.error("Layer initialization error:", error);
       }
     },
-
-    async initializeTrafficLayer() {
+    toggleTrafficLayer() {
       try {
-        // First, we'll implement a proper check for map readiness
-        const mapInstance = await this.ensureMapIsReady();
-
-        // Now we can safely proceed with traffic layer initialization
-        if (!this.trafficLayer) {
-          // Make sure the Google Maps API is available
-          if (!window.google?.maps) {
-            throw new Error("Google Maps API not yet loaded");
-          }
-
-          // Create our traffic layer
-          this.trafficLayer = new window.google.maps.TrafficLayer({
-            map: null, // Initialize without a map to prevent immediate rendering
-          });
+        if (!this.$refs.map?.map || !window.google?.maps) {
+          console.debug("Map not ready");
+          return;
         }
 
-        // Now safely set the map
-        this.trafficLayer.setMap(mapInstance);
-        console.log("Traffic layer successfully enabled");
+        if (!this.trafficLayer) {
+          this.trafficLayer = new window.google.maps.TrafficLayer();
+        }
+
+        const map = this.$refs.map.map;
+        this.trafficLayer.setMap(this.mapSettings.showTraffic ? map : null);
+        console.debug("Traffic layer toggled:", this.mapSettings.showTraffic);
       } catch (error) {
-        console.error("Traffic layer initialization failed:", error);
-        // Make sure to revert the setting in Vuex
-        await this.updateSetting({
-          key: "showTraffic",
-          value: false,
-        });
-        throw error;
+        console.error("Error toggling traffic layer:", error);
       }
     },
-
     // Add this new method to handle map initialization checking
     async ensureMapIsReady() {
       return new Promise((resolve, reject) => {
@@ -579,57 +864,51 @@ export default {
       });
     },
 
-    removeTrafficLayer() {
-      if (this.trafficLayer) {
-        this.trafficLayer.setMap(null);
-        console.log("Traffic layer disabled");
-      }
-    },
-    getDeviceMetrics(device) {
-      return {
-        // Speed and Movement
-        currentSpeed:
-          device?.latest_device_point?.device_point_detail?.speed?.value || 0,
-        speedLimit:
-          device?.latest_device_point?.device_point_external?.posted_speed_limit
-            ?.value,
-        isOverSpeedLimit:
-          parseFloat(device?.latest_device_point?.params?.mph_over_posted) > 0,
-        speedOverLimit:
-          parseFloat(device?.latest_device_point?.params?.mph_over_posted) || 0,
+    // getDeviceMetrics(device) {
+    //   return {
+    //     // Speed and Movement
+    //     currentSpeed:
+    //       device?.latest_device_point?.device_point_detail?.speed?.value || 0,
+    //     speedLimit:
+    //       device?.latest_device_point?.device_point_external?.posted_speed_limit
+    //         ?.value,
+    //     isOverSpeedLimit:
+    //       parseFloat(device?.latest_device_point?.params?.mph_over_posted) > 0,
+    //     speedOverLimit:
+    //       parseFloat(device?.latest_device_point?.params?.mph_over_posted) || 0,
 
-        // Vehicle Status
-        ignitionOn:
-          device?.latest_device_point?.device_point_detail?.acc || false,
-        batteryVoltage:
-          parseFloat(
-            device?.latest_device_point?.params?.obd_battery_voltage
-          ) || 0,
-        engineRPM: parseInt(device?.latest_device_point?.params?.eng_rpm) || 0,
+    //     // Vehicle Status
+    //     ignitionOn:
+    //       device?.latest_device_point?.device_point_detail?.acc || false,
+    //     batteryVoltage:
+    //       parseFloat(
+    //         device?.latest_device_point?.params?.obd_battery_voltage
+    //       ) || 0,
+    //     engineRPM: parseInt(device?.latest_device_point?.params?.eng_rpm) || 0,
 
-        // Trip Data
-        tripDistance:
-          device?.latest_device_point?.device_point_detail?.trip_distance
-            ?.value || 0,
-        driveTime:
-          device?.latest_device_point?.device_state?.drive_status_duration
-            ?.value || 0,
+    //     // Trip Data
+    //     tripDistance:
+    //       device?.latest_device_point?.device_point_detail?.trip_distance
+    //         ?.value || 0,
+    //     driveTime:
+    //       device?.latest_device_point?.device_state?.drive_status_duration
+    //         ?.value || 0,
 
-        // Signal Quality
-        signalStrength:
-          parseInt(
-            device?.latest_device_point?.device_point_detail?.num_satellites
-          ) || 0,
-        gpsAccuracy:
-          parseFloat(device?.latest_device_point?.device_point_detail?.hdop) ||
-          0,
+    //     // Signal Quality
+    //     signalStrength:
+    //       parseInt(
+    //         device?.latest_device_point?.device_point_detail?.num_satellites
+    //       ) || 0,
+    //     gpsAccuracy:
+    //       parseFloat(device?.latest_device_point?.device_point_detail?.hdop) ||
+    //       0,
 
-        // Status
-        driveStatus:
-          device?.latest_device_point?.device_state?.drive_status || "unknown",
-        isOnline: device?.online || false,
-      };
-    },
+    //     // Status
+    //     driveStatus:
+    //       device?.latest_device_point?.device_state?.drive_status || "unknown",
+    //     isOnline: device?.online || false,
+    //   };
+    // },
     getLastStoppedTime(device) {
       const driveStatus =
         device?.latest_device_point?.device_state?.drive_status;
@@ -663,14 +942,21 @@ export default {
     },
     // Device interaction methods
     handleMarkerClick(device) {
-      this.selectDevice(device.device_id);
+      if (this.clickedDeviceId === device.device_id) {
+        this.clickedDeviceId = null;
+        this.selectDevice(null);
+      } else {
+        this.clickedDeviceId = device.device_id;
+        this.selectDevice(device.device_id);
 
-      const position = this.getDevicePosition(device);
-      this.defaultCenter = position;
-      this.reverseGeocode(position.lat, position.lng, device.device_id);
+        const position = this.getDevicePosition(device);
+        this.defaultCenter = position;
+        this.reverseGeocode(position.lat, position.lng, device.device_id);
+      }
     },
 
     handleInfoWindowClose() {
+      this.clickedDeviceId = null;
       this.selectDevice(null);
     },
     updateSettings(newSettings) {
@@ -743,165 +1029,6 @@ export default {
         typeof lng === "number" && !isNaN(lng) && lng >= -180 && lng <= 180;
       return validLat && validLng;
     },
-    // async waitForGoogleMaps() {
-    //   // Instead of checking window.google directly, we'll use the map component's state
-    //   const MAX_TRIES = 20;
-    //   const DELAY = 250; // 250ms between checks
-    //   let attempts = 0;
-
-    //   while (attempts < MAX_TRIES) {
-    //     // Check if our map component exists and has initialized
-    //     if (this.$refs.map?.map) {
-    //       this.googleMapsLoaded = true;
-    //       console.log("Map component ready");
-    //       return true;
-    //     }
-
-    //     // Wait before next check
-    //     await new Promise((resolve) => setTimeout(resolve, DELAY));
-    //     attempts++;
-
-    //     if (attempts % 4 === 0) {
-    //       // Log every second
-    //       console.log(`Waiting for map to initialize... (${attempts / 4}s)`);
-    //     }
-    //   }
-
-    //   console.error("Map initialization timed out");
-    //   return false;
-    // },
-    //  async initializeTrafficLayer() {
-    //   try {
-    //     if (!window.google?.maps?.TrafficLayer) {
-    //       throw new Error('TrafficLayer not available');
-    //     }
-
-    //     if (!this.trafficLayer) {
-    //       this.trafficLayer = new window.google.maps.TrafficLayer();
-    //     }
-
-    //     this.trafficLayer.setMap(this.$refs.map.map);
-    //     await this.setTrafficInitialized(true);
-    //     console.log('Traffic layer enabled');
-
-    //   } catch (error) {
-    //     console.error('Traffic layer initialization failed:', error);
-    //     await this.setTrafficInitialized(false);
-    //     throw error;
-    //   }
-    // },
-
-    // removeTrafficLayer() {
-    //   try {
-    //     if (this.trafficLayer) {
-    //       this.trafficLayer.setMap(null);
-    //       this.setTrafficInitialized(false);
-    //       console.log('Traffic layer disabled');
-    //     }
-    //   } catch (error) {
-    //     console.error('Error removing traffic layer:', error);
-    //   }
-    // },
-
-    // async initializeLayers() {
-    //   try {
-    //     const isReady = await this.waitForGoogleMaps();
-    //     if (!isReady) {
-    //       console.warn("Cannot initialize layers - map not ready");
-    //       return;
-    //     }
-
-    //     const google = window.google;
-    //     if (this.mapSettings.showTraffic) {
-    //       if (!this.trafficLayer) {
-    //         this.trafficLayer = new google.maps.TrafficLayer();
-    //       }
-    //       this.trafficLayer.setMap(this.$refs.map.map);
-    //       console.log("Traffic layer enabled");
-    //     } else if (this.trafficLayer) {
-    //       this.trafficLayer.setMap(null);
-    //       console.log("Traffic layer disabled");
-    //     }
-    //   } catch (error) {
-    //     console.error("Layer initialization error:", error);
-    //   }
-    // },
-    // handleMarkerClick(device) {
-    //   console.log("Clicked device:", device);
-
-    //   // Toggle selection
-    //   this.selectedDevice =
-    //     this.selectedDevice === device.device_id ? null : device.device_id;
-
-    //   // If device is selected, update center and fetch address
-    //   if (this.selectedDevice) {
-    //     const position = this.getDevicePosition(device);
-    //     this.defaultCenter = position;
-
-    //     // Fetch address for the selected device
-    //     this.reverseGeocode(position.lat, position.lng, device.device_id);
-    //   }
-    // },
-
-    // async reverseGeocode(lat, lng, deviceId) {
-    //   try {
-    //     const response = await fetch(
-    //       `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${this.apiKey}`
-    //     );
-    //     const data = await response.json();
-    //     if (data.results && data.results[0]) {
-    //       this.addressMap[deviceId] = data.results[0].formatted_address;
-    //     }
-    //   } catch (error) {
-    //     console.error("Geocoding error:", error);
-    //     this.addressMap[deviceId] = "Address lookup failed";
-    //   }
-    // },
-
-    // async updateMapLayers() {
-    //   try {
-    //     // First ensure map is ready
-    //     if (!this.$refs.map?.map) {
-    //       console.log("Map not yet ready");
-    //       return;
-    //     }
-
-    //     // Get Google Maps API from window object
-    //     const google = window.google;
-    //     if (!google?.maps) {
-    //       console.log("Google Maps API not yet loaded");
-    //       return;
-    //     }
-
-    //     // Handle traffic layer
-    //     if (this.mapSettings.showTraffic) {
-    //       if (!google.maps.TrafficLayer) {
-    //         // Check if TrafficLayer is available
-    //         console.error("TrafficLayer is not available on google maps.");
-    //         return;
-    //       }
-    //       if (!this.trafficLayer) {
-    //         // Create new TrafficLayer using Google Maps API directly
-    //         this.trafficLayer = new google.maps.TrafficLayer();
-    //       }
-    //       // Set the map for the traffic layer
-    //       this.trafficLayer.setMap(this.$refs.map.map);
-    //       console.log("Traffic layer enabled");
-    //     } else if (this.trafficLayer) {
-    //       // Remove traffic layer by setting map to null
-    //       this.trafficLayer.setMap(null);
-    //       console.log("Traffic layer disabled");
-    //     }
-    //   } catch (error) {
-    //     console.error("Error updating map layers:", error);
-    //     // Log more details about the error to help with debugging
-    //     console.log("Error details:", {
-    //       mapReady: !!this.$refs.map?.map,
-    //       googleMapsAvailable: !!window.google?.maps,
-    //       trafficLayerExists: !!this.trafficLayer,
-    //     });
-    //   }
-    // },
 
     async fetchWeatherData() {
       if (!this.mapSettings.showWeather || !this.$refs.map?.map) return;
@@ -992,51 +1119,22 @@ export default {
       return (((kelvin - 273.15) * 9) / 5 + 32).toFixed(1);
     },
 
-    //    getMarkerIcon(device) {
-    //   const speed = parseFloat(device.latest_device_point.device_point_detail.speed.display);
-    //   const status = device.latest_device_point.device_state.drive_status;
-
-    //   // Define icons for different states
-    //   const icons = {
-    //     moving: {
-    //       url: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
-    //       scaledSize: { width: 32, height: 32 }
-    //     },
-    //     idle: {
-    //       url: 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
-    //       scaledSize: { width: 32, height: 32 }
-    //     },
-    //     stopped: {
-    //       url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
-    //       scaledSize: { width: 32, height: 32 }
-    //     }
-    //   };
-
-    //   // Logic to determine which icon to use
-    //   if (speed > 0) {
-    //     return icons.moving;
-    //   } else if (status === 'idle') {
-    //     return icons.idle;
-    //   } else {
-    //     return icons.stopped;
-    //   }
-    // },
     getMarkerIcon(device) {
-      const speed = parseFloat(
-        device.latest_device_point.device_point_detail.speed.display
-      );
-      const heading = device.latest_device_point.device_point_detail.heading;
+      const speed = device.latest_device_point.speed;
+      const heading = device.latest_device_point.angle;
 
-      // SVG arrow marker
+      //      if (!window.google?.maps) {
+      //   return null;
+      // }
       return {
-        path: "M 12,0 L 24,24 L 12,16 L 0,24 Z", // Arrow shape
-        fillColor: speed > 0 ? "#00FF00" : "#FF0000", // Green for moving, red for stopped
+        path: "M 12,0 L 24,24 L 12,16 L 0,24 Z",
+        fillColor: speed > 0 ? "#00FF00" : "#FF0000",
         fillOpacity: 1,
         strokeWeight: 1,
         strokeColor: "#000000",
-        rotation: heading,
+        rotation: heading || 0,
         scale: 1,
-        anchor: { x: 12, y: 12 }, // Using plain object instead of google.maps.Point
+        anchor: { x: 12, y: 12 },
       };
     },
 
@@ -1050,15 +1148,6 @@ export default {
       if (days === 0) return `${hours} hours`;
       if (remainingHours === 0) return `${days} days`;
       return `${days} days, ${remainingHours} hours`;
-    },
-    kmToMph(kmValue) {
-      // Extract the numeric value if it's a string with "km/h"
-      const km = parseFloat(kmValue.toString().replace("km/h", ""));
-      if (isNaN(km)) return kmValue; // Return original if parsing fails
-
-      // Convert km/h to mph (1 km/h = 0.621371 mph)
-      const mph = (km * 0.621371).toFixed(1);
-      return `${mph} mph`;
     },
     getTimeElapsed(timestamp) {
       const now = new Date();
@@ -1093,128 +1182,17 @@ export default {
         this.$forceUpdate();
       }, 1000);
     },
-    getDeviceStatus(device) {
-      const speed = parseFloat(
-        device.latest_device_point.device_point_detail.speed.display
-      );
-      const statusTime =
-        device.latest_device_point.device_state.drive_status_begin_time;
-
-      // First check connectivity
-      const connectivity = this.getDeviceConnectivityStatus(device);
-      if (connectivity.status !== "Online") {
-        return {
-          status: connectivity.status,
-          time: this.formatTimeAgo(device.updated_at),
-          className: connectivity.className,
-        };
-      }
-
-      // If online, then show movement status
-      if (speed > 0) {
-        return {
-          status: "Moving",
-          time: this.getTimeElapsed(statusTime),
-          className: "bg-green-100 text-green-800",
-        };
-      } else {
-        return {
-          status: "Stopped",
-          time: this.formatDuration(
-            device.latest_device_point.device_state.drive_status_duration
-              .display
-          ),
-          className: "bg-gray-100 text-gray-800",
-        };
-      }
-    },
 
     getDevicePosition(device) {
-      if (device?.latest_device_point?.device_point_detail?.lat_lng) {
+      if (device?.latest_device_point) {
         return {
-          lat: Number(
-            device.latest_device_point.device_point_detail.lat_lng.lat
-          ),
-          lng: Number(
-            device.latest_device_point.device_point_detail.lat_lng.lng
-          ),
+          lat: Number(device.latest_device_point.lat),
+          lng: Number(device.latest_device_point.lng),
         };
       }
       return this.defaultCenter;
     },
-    //  animateMarkerMovement(device, start, end) {
-    //       const frames = 20; // Number of frames for animation
-    //       let count = 0;
 
-    //       const animateFrame = () => {
-    //         count++;
-
-    //         // Calculate intermediate position
-    //         const lat = start.lat + (end.lat - start.lat) * (count / frames);
-    //         const lng = start.lng + (end.lng - start.lng) * (count / frames);
-
-    //         // Update device position
-    //         device.latest_device_point.device_point_detail.lat_lng = {
-    //           lat: lat,
-    //           lng: lng
-    //         };
-
-    //         // Force update
-    //         this.devices = [...this.devices];
-
-    //         // Continue animation if not done
-    //         if (count < frames) {
-    //           requestAnimationFrame(animateFrame);
-    //         }
-    //       };
-
-    //       // Start animation
-    //       requestAnimationFrame(animateFrame);
-    //     },
-    //     initWebSocket() {
-    //       const wsUrl = `ws://${window.location.hostname}:8080/ws`;
-    //       this.ws = new WebSocket(wsUrl);
-
-    //       this.ws.onopen = () => {
-    //         console.log("WebSocket connection established");
-
-    //       };
-
-    //       this.ws.onmessage = async (event) => {
-    //         const updatedDevice = JSON.parse(event.data);
-    //         console.log("Received WebSocket update:", updatedDevice);
-
-    //         // Instead of directly modifying devices array, use Vuex
-    //     const deviceToUpdate = this.devices.find(
-    //       device => device.device_id === updatedDevice.device_id
-    //     );
-
-    //     if (deviceToUpdate) {
-    //       const currentPos = this.getDevicePosition(deviceToUpdate);
-    //       const newPos = {
-    //         lat: Number(updatedDevice.latest_device_point.device_point_detail.lat_lng.lat),
-    //         lng: Number(updatedDevice.latest_device_point.device_point_detail.lat_lng.lng)
-    //       };
-
-    //       // If position changed, animate the movement
-    //       if (currentPos.lat !== newPos.lat || currentPos.lng !== newPos.lng) {
-    //         if (this.animationQueue.has(updatedDevice.device_id)) {
-    //           cancelAnimationFrame(this.animationQueue.get(updatedDevice.device_id));
-    //         }
-
-    //         await this.animateMarkerMovement(
-    //           deviceToUpdate,
-    //           currentPos,
-    //           newPos,
-    //           updatedDevice
-    //         );
-    //       } else {
-    //         // If position hasn't changed, just update the device data
-    //         await this.$store.dispatch('devices/updateDevice', updatedDevice);
-    //       }
-    //     }
-    //   };
-    // },
     startPolling() {
       // Poll every 5 seconds
       this.pollingInterval = setInterval(async () => {
@@ -1350,45 +1328,12 @@ export default {
       clearInterval(this.timer);
     }
     this.stopPolling(); // Stop polling when component unmounts
+    // Clean up map listeners
+    if (this.map) {
+      window.google.maps.event.clearListeners(this.map, "click");
+    }
   },
 };
 </script>
 
-<style>
-.info-window {
-  padding: 1rem;
-  min-width: 200px;
-}
-
-.info-window h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.2rem;
-}
-
-.device-info p {
-  margin: 0.25rem 0;
-  font-size: 0.9rem;
-}
-
-.status-panel {
-  margin-top: 1rem;
-  padding: 1rem;
-  background-color: #f5f5f5;
-  border-radius: 4px;
-}
-
-.status-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.5rem;
-  border-bottom: 1px solid #ddd;
-}
-
-.status-label {
-  font-weight: bold;
-}
-
-.status-item:last-child {
-  border-bottom: none;
-}
-</style>
+<style></style>

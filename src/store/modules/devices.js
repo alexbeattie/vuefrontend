@@ -4,6 +4,7 @@ const state = () => ({
   devices: [],
   selectedDevice: null,
   addressMap: {},
+  geocodingCache: {}, // New cache object
   error: null,
   loading: false
 });
@@ -41,17 +42,36 @@ const mutations = {
   },
   UPDATE_ADDRESS(state, { deviceId, address }) {
     state.addressMap[deviceId] = address;
+  },
+
+  // New mutation to update geocoding cache
+  UPDATE_GEOCODING_CACHE(state, { coordinates, address, timestamp }) {
+    const key = `${coordinates.lat},${coordinates.lng}`;
+    state.geocodingCache[key] = {
+      address,
+      timestamp
+    };
+    // Optional: Limit cache size
+    if (Object.keys(state.geocodingCache).length > 100) {
+      const oldestKey = Object.keys(state.geocodingCache)
+        .reduce((oldest, current) =>
+          state.geocodingCache[current].timestamp <
+            state.geocodingCache[oldest].timestamp ? current : oldest
+        );
+      delete state.geocodingCache[oldestKey];
+    }
+  },
+  SET_GEOCODING_CACHE(state, cache) {
+    state.geocodingCache = cache;
   }
 };
 
 const actions = {
-  async fetchDevices({ commit }) {
+  async fetchDevices({ commit, dispatch }) {
     commit('SET_LOADING', true);
     try {
       console.log('Fetching devices from Go server...');
       const response = await fetch('http://localhost:8080/api/v1/devices');
-
-      // Log the response status
       console.log('Response status:', response.status);
 
       if (!response.ok) {
@@ -59,26 +79,33 @@ const actions = {
       }
 
       const data = await response.json();
-      console.log('Raw API response:', JSON.stringify(data, null, 2));
 
-      // If data is returning as a single device, wrap it in an array
+      let devicesToProcess = [];
+
+      // Handle different data structures
       if (data && !Array.isArray(data) && data.device_id) {
-        console.log('Converting single device to array');
+        devicesToProcess = [data];
         commit('SET_DEVICES', [data]);
-      }
-      // If data is returning as an array
-      else if (Array.isArray(data)) {
-        console.log('Setting devices array:', data.length, 'devices');
+      } else if (Array.isArray(data)) {
+        devicesToProcess = data;
         commit('SET_DEVICES', data);
-      }
-      // If data has a devices property
-      else if (data && data.devices) {
-        console.log('Setting devices from object:', data.devices.length, 'devices');
+      } else if (data && data.devices) {
+        devicesToProcess = data.devices;
         commit('SET_DEVICES', data.devices);
       } else {
-        console.error('Unexpected data structure:', data);
         commit('SET_DEVICES', []);
+        devicesToProcess = [];
       }
+
+      // Process geocoding for each device
+      for (const device of devicesToProcess) {
+        if (device?.latest_device_point?.lat && device?.latest_device_point?.lng) {
+          // Add a small delay between geocoding requests
+          await new Promise(resolve => setTimeout(resolve, 100));
+          dispatch('updateDeviceAddress', device);
+        }
+      }
+
     } catch (error) {
       console.error('Error fetching devices:', error);
       commit('SET_ERROR', error.message);
@@ -87,19 +114,97 @@ const actions = {
     }
   },
 
-  updateDevice({ commit }, device) {
-    commit('UPDATE_DEVICE', device);
-  },
-
   selectDevice({ commit }, deviceId) {
     commit('SET_SELECTED_DEVICE', deviceId);
   },
 
-  // Add the updateAddress action
   updateAddress({ commit }, { deviceId, address }) {
     commit('UPDATE_ADDRESS', { deviceId, address });
+  },
+
+
+  // Add new action for geocoding
+  async updateDeviceAddress({ commit, state }, device) {
+    const lat = device.latest_device_point.lat;
+    const lng = device.latest_device_point.lng;
+    const cacheKey = `${lat},${lng}`;
+    const now = Date.now();
+
+    // Check cache first
+    const cachedResult = state.geocodingCache[cacheKey];
+    if (cachedResult) {
+      // Check if cache is fresh (e.g., less than 24 hours old)
+      const twentyFourHoursAgo = now - (24 * 60 * 60 * 1000);
+      if (cachedResult.timestamp > twentyFourHoursAgo) {
+        commit('UPDATE_ADDRESS', {
+          deviceId: device.device_id,
+          address: cachedResult.address
+        });
+        return;
+      }
+    }
+
+    try {
+      // Set a loading state
+      commit('UPDATE_ADDRESS', {
+        deviceId: device.device_id,
+        address: 'Loading address...'
+      });
+
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${process.env.VUE_APP_GOOGLE_MAPS_API_KEY}`
+      );
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+      const data = await response.json();
+      if (data.status === "OK" && data.results?.[0]) {
+        const address = data.results[0].formatted_address;
+
+        // Update both address map and geocoding cache
+        commit('UPDATE_ADDRESS', {
+          deviceId: device.device_id,
+          address: address
+        });
+
+        commit('UPDATE_GEOCODING_CACHE', {
+          coordinates: { lat, lng },
+          address: address,
+          timestamp: now
+        });
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      commit('UPDATE_ADDRESS', {
+        deviceId: device.device_id,
+        address: 'Address lookup failed'
+      });
+    }
+  },
+
+  // Optional: Method to persist cache to localStorage
+  persistGeocodeCache({ state }) {
+    try {
+      localStorage.setItem('geocodingCache', JSON.stringify(state.geocodingCache));
+    } catch (error) {
+      console.error('Failed to persist geocoding cache', error);
+    }
+  },
+
+  // Optional: Method to load cache from localStorage on app init
+  loadGeocodeCache({ commit }) {
+    try {
+      const cachedData = localStorage.getItem('geocodingCache');
+      if (cachedData) {
+        const parsedCache = JSON.parse(cachedData);
+        commit('SET_GEOCODING_CACHE', parsedCache);
+      }
+    } catch (error) {
+      console.error('Failed to load geocoding cache', error);
+    }
   }
 };
+
 
 const getters = {
   hasDevices: (state) => {
@@ -116,6 +221,7 @@ const getters = {
   getAddressForDevice: (state) => (id) => {
     return state.addressMap[id] || 'Loading address...';
   },
+
   isDeviceSelected: (state) => (id) => {
     return state.selectedDevice === id;
   }

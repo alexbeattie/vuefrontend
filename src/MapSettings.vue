@@ -1,5 +1,5 @@
 <template>
-  <div class="fixed top-4 left-4 bg-white rounded-lg shadow-lg w-80 z-50 map-settings">
+  <div class="fixed top-4 right-4 bg-white rounded-lg shadow-lg w-80 z-50 map-settings">
     <div class="flex justify-between items-center p-4 border-b settings-header">
       <h2 class="text-lg font-semibold">Map Settings</h2>
       <button @click="$emit('close')" class="text-gray-500 hover:text-gray-700 close-button">
@@ -32,7 +32,7 @@
         </label>
       </div>
 
-      <!-- Theme Selection -->
+      <!-- Theme Selection
       <div>
         <div class="flex justify-between items-center mb-2">
           <span class="font-medium">App Theme</span>
@@ -45,20 +45,20 @@
             <option value="dark">Dark</option>
           </select>
         </div>
-      </div>
+      </div> -->
 
       <!-- Map Features -->
       <div class="space-y-4">
         <label class="flex items-center justify-between cursor-pointer">
           <span>Traffic</span>
           <input
-            type="checkbox"
-            v-model="localSettings.showTraffic"
-            class="w-4 h-4"
-            @change="handleChange"
-          />
+          type="checkbox"
+          :checked="localSettings.showTraffic"
+          @change="handleTrafficChange"
+          class="w-4 h-4"
+        />
         </label>
-        <label class="flex items-center justify-between cursor-pointer">
+        <!-- <label class="flex items-center justify-between cursor-pointer">
           <span>Weather</span>
           <input
             type="checkbox"
@@ -66,22 +66,22 @@
             class="w-4 h-4"
             @change="handleChange"
           />
-        </label>
+        </label> -->
       </div>
 
       <!-- Device Settings -->
-      <div class="space-y-4">
-        <h3 class="font-medium">DEVICES</h3>
-        <label class="flex items-center justify-between cursor-pointer">
-          <span>Show devices</span>
-          <input
-            type="checkbox"
-            v-model="localSettings.showDevices"
-            class="w-4 h-4"
-            @change="handleChange"
-          />
-        </label>
-        <label class="flex items-center justify-between cursor-pointer">
+      <!-- <div class="space-y-4"> -->
+        <!-- <h3 class="font-medium">DEVICES</h3> -->
+       <!-- <label class="flex items-center justify-between cursor-pointer">
+        <span>Show devices</span>
+        <input
+          type="checkbox"
+          v-model="localSettings.showDevices"
+          class="w-4 h-4"
+          @change="handleChange"
+        />
+      </label> -->
+        <!-- <label class="flex items-center justify-between cursor-pointer">
           <span>Show labels</span>
           <input
             type="checkbox"
@@ -89,8 +89,8 @@
             class="w-4 h-4"
             @change="handleChange"
           />
-        </label>
-        <label class="flex items-center justify-between cursor-pointer">
+        </label> -->
+        <!-- <label class="flex items-center justify-between cursor-pointer">
           <span>Show driver name in label</span>
           <input
             type="checkbox"
@@ -98,13 +98,15 @@
             class="w-4 h-4"
             @change="handleChange"
           />
-        </label>
-      </div>
+        </label> -->
+      <!-- </div> -->
     </div>
   </div>
 </template>
 
 <script>
+import { mapState } from 'vuex';
+
 export default {
   name: 'MapSettings',
   
@@ -119,13 +121,17 @@ export default {
 
   data() {
     return {
-      // Create a local copy of settings to work with
       localSettings: { ...this.modelValue }
     }
   },
 
+  computed: {
+    ...mapState('mapSettings', {
+      mapSettings: state => state.settings
+    })
+  },
+
   watch: {
-    // Update local settings when prop changes
     modelValue: {
       handler(newValue) {
         this.localSettings = { ...newValue };
@@ -138,6 +144,12 @@ export default {
     handleChange() {
       // Emit the entire settings object when any setting changes
       this.$emit('update:modelValue', { ...this.localSettings });
+      
+      // Also update Vuex store
+      this.$store.dispatch('mapSettings/updateSetting', {
+        key: 'showDevices',
+        value: this.localSettings.showDevices
+      });
     }
   }
 }
