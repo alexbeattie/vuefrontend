@@ -1,10 +1,10 @@
-// components/AdvancedMarker.vue
 <template>
   <div></div>
 </template>
 
 <script>
 export default {
+  name: 'AdvancedMarker',
   props: {
     position: {
       type: Object,
@@ -22,18 +22,36 @@ export default {
       required: true,
       validator: function(value) {
         return value.latest_device_point &&
-               value.latest_device_point.speed !== undefined &&
-               value.latest_device_point.angle !== undefined;
+          value.latest_device_point.speed !== undefined &&
+          value.latest_device_point.angle !== undefined;
       }
     }
   },
-
   inject: ['getDeviceStatus', 'mapSettings'],
-
+  
   data() {
     return {
       marker: null
     };
+  },
+
+  watch: {
+    position: {
+      handler(newPos) {
+        if (this.marker) {
+          this.marker.setPosition(newPos);
+        }
+      },
+      deep: true
+    },
+    'mapSettings.showDevices': {
+      handler(newValue) {
+        if (this.marker) {
+          this.marker.setVisible(newValue);
+        }
+      },
+      immediate: true
+    }
   },
 
   mounted() {
@@ -44,13 +62,17 @@ export default {
 
   methods: {
     initializeMarker() {
-      if (!window.google?.maps || !this.$parent.map) return;
+      if (!window.google?.maps || !this.$parent.map) {
+        console.warn('Google Maps not ready');
+        return;
+      }
 
       this.marker = new window.google.maps.Marker({
         position: this.position,
         title: this.title,
         map: this.$parent.map,
         icon: this.getMarkerIcon(),
+        visible: this.mapSettings.showDevices
       });
 
       this.$emit('register-marker', this.device.device_id, this.marker);
@@ -77,6 +99,12 @@ export default {
         scale: 1,
         anchor: { x: 12, y: 12 }
       };
+    },
+
+    updateMarkerPosition() {
+      if (this.marker && this.position) {
+        this.marker.setPosition(this.position);
+      }
     }
   },
 

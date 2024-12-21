@@ -48,8 +48,8 @@
       </div> -->
 
       <!-- Map Features -->
-      <div class="space-y-4">
-        <label class="flex items-center justify-between cursor-pointer">
+      <!-- <div class="space-y-4"> -->
+        <!-- <label class="flex items-center justify-between cursor-pointer">
           <span>Traffic</span>
           <input
           type="checkbox"
@@ -57,7 +57,7 @@
           @change="handleTrafficChange"
           class="w-4 h-4"
         />
-        </label>
+        </label> -->
         <!-- <label class="flex items-center justify-between cursor-pointer">
           <span>Weather</span>
           <input
@@ -67,7 +67,7 @@
             @change="handleChange"
           />
         </label> -->
-      </div>
+      <!-- </div> -->
 
       <!-- Device Settings -->
       <!-- <div class="space-y-4"> -->

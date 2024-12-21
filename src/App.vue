@@ -216,8 +216,65 @@
                           ></div>
                         </div>
                       </div>
+                     
                     </template>
                   </div>
+                   <!-- Add this inside the device info div where you show GPS and other metrics -->
+                      <div class="flex items-center space-x-2">
+                        <span class="text-xs">Battery:</span>
+                        <div class="flex items-center">
+                          <div class="relative inline-flex">
+                            <span
+                              class="text-xs"
+                              :class="{
+                                'text-red-600':
+                                  device.latest_device_point?.params
+                                    ?.obd_battery_voltage <= 12,
+                                'text-green-600':
+                                  device.latest_device_point?.params
+                                    ?.obd_battery_voltage > 12,
+                              }"
+                            >
+                              {{
+                                device.latest_device_point?.params
+                                  ?.obd_battery_voltage || "N/A"
+                              }}
+                            </span>
+                            <!-- Battery Icon -->
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              class="h-4 w-4 ml-1"
+                              :class="{
+                                'text-red-500':
+                                  device.latest_device_point?.params
+                                    ?.obd_battery_voltage <= 12,
+                                'text-yellow-500':
+                                  device.latest_device_point?.params
+                                    ?.obd_battery_voltage <= 12.5,
+                                'text-green-500':
+                                  device.latest_device_point?.params
+                                    ?.obd_battery_voltage > 12.5,
+                              }"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M3 5h14a2 2 0 012 2v10a2 2 0 01-2 2H3a2 2 0 01-2-2V7a2 2 0 012-2z"
+                              />
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M20 10h2v4h-2"
+                              />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
                 </div>
               </div>
             </div>
@@ -302,8 +359,66 @@
                           ></div>
                         </div>
                       </div>
+                      <!-- Add this inside the device info div where you show GPS and other metrics -->
+                   
                     </template>
                   </div>
+   <div class="flex items-center space-x-2">
+                        <span class="text-xs">Battery:</span>
+                        <div class="flex items-center">
+                          <div class="relative inline-flex">
+                            <span
+                              class="text-xs"
+                              :class="{
+                                'text-red-600':
+                                  device.latest_device_point?.params
+                                    ?.obd_battery_voltage <= 12,
+                                'text-green-600':
+                                  device.latest_device_point?.params
+                                    ?.obd_battery_voltage > 12,
+                              }"
+                            >
+                              {{
+                                device.latest_device_point?.params
+                                  ?.obd_battery_voltage || "N/A"
+                              }}
+                            </span>
+                            <!-- Battery Icon -->
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              class="h-4 w-4 ml-1"
+                              :class="{
+                                'text-red-500':
+                                  device.latest_device_point?.params
+                                    ?.obd_battery_voltage <= 12,
+                                'text-yellow-500':
+                                  device.latest_device_point?.params
+                                    ?.obd_battery_voltage <= 12.5,
+                                'text-green-500':
+                                  device.latest_device_point?.params
+                                    ?.obd_battery_voltage > 12.5,
+                              }"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M3 5h14a2 2 0 012 2v10a2 2 0 01-2 2H3a2 2 0 01-2-2V7a2 2 0 012-2z"
+                              />
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M20 10h2v4h-2"
+                              />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+
                 </div>
               </div>
             </div>
@@ -330,6 +445,7 @@
                 }"
               >
                 <div class="flex justify-between items-center">
+                  
                   <span class="font-medium">{{ device.display_name }}</span>
                   <span
                     class="px-2 py-1 rounded-full text-xs"
@@ -338,6 +454,7 @@
                     {{ getDeviceStatus(device).status }}
                   </span>
                 </div>
+                
                 <div class="text-sm text-gray-500 mt-1">
                   <div class="truncate max-w-xs">
                     {{ getAddressForDevice(device.device_id) }}
@@ -388,8 +505,65 @@
                           ></div>
                         </div>
                       </div>
+                  
                     </template>
                   </div>
+                      <!-- Add this inside the device info div where you show GPS and other metrics -->
+                      <div class="flex items-center space-x-2">
+                        <span class="text-xs">Battery:</span>
+                        <div class="flex items-center">
+                          <div class="relative inline-flex">
+                            <span
+                              class="text-xs"
+                              :class="{
+                                'text-red-600':
+                                  device.latest_device_point?.params
+                                    ?.obd_battery_voltage <= 12,
+                                'text-green-600':
+                                  device.latest_device_point?.params
+                                    ?.obd_battery_voltage > 12,
+                              }"
+                            >
+                              {{
+                                device.latest_device_point?.params
+                                  ?.obd_battery_voltage || "N/A"
+                              }}V
+                            </span>
+                            <!-- Battery Icon -->
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              class="h-4 w-4 ml-1"
+                              :class="{
+                                'text-red-500':
+                                  device.latest_device_point?.params
+                                    ?.obd_battery_voltage <= 12,
+                                'text-yellow-500':
+                                  device.latest_device_point?.params
+                                    ?.obd_battery_voltage <= 12.5,
+                                'text-green-500':
+                                  device.latest_device_point?.params
+                                    ?.obd_battery_voltage > 12.5,
+                              }"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M3 5h14a2 2 0 012 2v10a2 2 0 01-2 2H3a2 2 0 01-2-2V7a2 2 0 012-2z"
+                              />
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M20 10h2v4h-2"
+                              />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
                 </div>
               </div>
             </div>
@@ -436,6 +610,7 @@
           @ready="initializeLayers"
           @click="handleMapClick"
         >
+        <div>
           <MapSettings
             v-if="showMapSettings"
             :modelValue="mapSettings"
@@ -465,6 +640,7 @@
               />
             </template>
           </template>
+          </div>
         </GoogleMap>
       </div>
     </div>
@@ -479,8 +655,8 @@ import { GoogleMap } from "vue3-google-map";
 import MapSettings from "./MapSettings.vue"; // Make sure path is correct
 import AdvancedMarker from "./components/AdvancedMarker.vue";
 import CustomInfoWindow from "./components/CustomInfoWindow.vue";
-import { kmToMph } from '@/utils/unitConversion'; 
-import { formatTimeAgo, getDeviceMetrics } from "@/services/deviceMetrics";
+import { kmToMph } from "@/utils/unitConversion";
+import { formatTimeAgo, getDeviceMetrics, getBatteryStatus } from "@/services/deviceMetrics";
 import { getDeviceStatus } from "./utils/deviceStatus";
 
 import _ from "lodash";
@@ -495,12 +671,13 @@ export default {
     CustomInfoWindow,
   },
   provide() {
+   
     return {
       getDeviceStatus: this.getDeviceStatus,
-      mapSettings: computed(() => this.mapSettings), // Make it reactive
-
+      mapSettings: computed(() => this.mapSettings),
       getAddressForDevice: this.getAddressForDevice,
       kmToMph,
+      getBatteryStatus, // Add this
     };
   },
   data() {
@@ -714,18 +891,16 @@ export default {
       this.updateMarkersVisibility();
     },
     "mapSettings.showDevices"() {
-      this.updateMarkersVisibility(); 
+      this.updateMarkersVisibility();
     },
-    "mapSettings.showTraffic": {
-      handler() {
-        this.$nextTick(() => {
-          if (this.$refs.map?.map) {
-            this.toggleTrafficLayer();
-          }
-        });
-      },
-      immediate: true,
-    },
+    // "mapSettings.showTraffic": {
+    //   handler() {
+    //     this.$nextTick(() => {
+    //       if (this.$refs.map?.map) {
+    //         this.toggleTrafficLayer();
+    //       }
+    //     });
+    //   },
   },
   methods: {
     registerMarker(deviceId, marker) {
@@ -781,9 +956,9 @@ export default {
       "updateAddress",
       "updateDeviceSettings",
     ]),
-    
+
     getDeviceStatus,
-    
+
     initializeMarker() {
       if (!window.google?.maps || !this.$parent.map) return;
 
@@ -814,6 +989,7 @@ export default {
     formatTimeAgo,
     kmToMph,
     getDeviceMetrics,
+    getBatteryStatus,
 
     // Map initialization methods
     async initializeLayers() {
@@ -832,98 +1008,32 @@ export default {
         console.error("Layer initialization error:", error);
       }
     },
-    toggleTrafficLayer() {
-      try {
-        if (!this.$refs.map?.map || !window.google?.maps) {
-          console.debug("Map not ready");
-          return;
-        }
+    // getBatteryStatus(voltage) {
+    //   if (!voltage) return "unknown";
+    //   const v = parseFloat(voltage);
+    //   if (v <= 11.5) return "critical";
+    //   if (v <= 12.0) return "low";
+    //   if (v >= 14.5) return "high";
+    //   if (v >= 13.0) return "normal";
+    //   return "warning";
+    // },
 
-        if (!this.trafficLayer) {
-          this.trafficLayer = new window.google.maps.TrafficLayer();
-        }
-
-        const map = this.$refs.map.map;
-        this.trafficLayer.setMap(this.mapSettings.showTraffic ? map : null);
-        console.debug("Traffic layer toggled:", this.mapSettings.showTraffic);
-      } catch (error) {
-        console.error("Error toggling traffic layer:", error);
+    getBatteryColor(voltage) {
+      const status = this.getBatteryStatus(voltage);
+      switch (status) {
+        case "critical":
+          return "text-red-600";
+        case "low":
+          return "text-orange-500";
+        case "high":
+          return "text-yellow-500";
+        case "normal":
+          return "text-green-500";
+        default:
+          return "text-gray-500";
       }
     },
-    // Add this new method to handle map initialization checking
-    async ensureMapIsReady() {
-      return new Promise((resolve, reject) => {
-        // If map is already ready, resolve immediately
-        if (this.$refs.map?.map && window.google?.maps) {
-          resolve(this.$refs.map.map);
-          return;
-        }
-
-        // Otherwise, wait for the map to be ready
-        let attempts = 0;
-        const maxAttempts = 20;
-        const interval = setInterval(() => {
-          attempts++;
-
-          if (this.$refs.map?.map && window.google?.maps) {
-            clearInterval(interval);
-            resolve(this.$refs.map.map);
-            return;
-          }
-
-          if (attempts >= maxAttempts) {
-            clearInterval(interval);
-            reject(new Error("Map initialization timed out"));
-          }
-        }, 250); // Check every 250ms
-      });
-    },
-
-    // getDeviceMetrics(device) {
-    //   return {
-    //     // Speed and Movement
-    //     currentSpeed:
-    //       device?.latest_device_point?.device_point_detail?.speed?.value || 0,
-    //     speedLimit:
-    //       device?.latest_device_point?.device_point_external?.posted_speed_limit
-    //         ?.value,
-    //     isOverSpeedLimit:
-    //       parseFloat(device?.latest_device_point?.params?.mph_over_posted) > 0,
-    //     speedOverLimit:
-    //       parseFloat(device?.latest_device_point?.params?.mph_over_posted) || 0,
-
-    //     // Vehicle Status
-    //     ignitionOn:
-    //       device?.latest_device_point?.device_point_detail?.acc || false,
-    //     batteryVoltage:
-    //       parseFloat(
-    //         device?.latest_device_point?.params?.obd_battery_voltage
-    //       ) || 0,
-    //     engineRPM: parseInt(device?.latest_device_point?.params?.eng_rpm) || 0,
-
-    //     // Trip Data
-    //     tripDistance:
-    //       device?.latest_device_point?.device_point_detail?.trip_distance
-    //         ?.value || 0,
-    //     driveTime:
-    //       device?.latest_device_point?.device_state?.drive_status_duration
-    //         ?.value || 0,
-
-    //     // Signal Quality
-    //     signalStrength:
-    //       parseInt(
-    //         device?.latest_device_point?.device_point_detail?.num_satellites
-    //       ) || 0,
-    //     gpsAccuracy:
-    //       parseFloat(device?.latest_device_point?.device_point_detail?.hdop) ||
-    //       0,
-
-    //     // Status
-    //     driveStatus:
-    //       device?.latest_device_point?.device_state?.drive_status || "unknown",
-    //     isOnline: device?.online || false,
-    //   };
-    // },
+    
     getLastStoppedTime(device) {
       const driveStatus =
         device?.latest_device_point?.device_state?.drive_status;
@@ -1046,91 +1156,7 @@ export default {
       return validLat && validLng;
     },
 
-    async fetchWeatherData() {
-      if (!this.mapSettings.showWeather || !this.$refs.map?.map) return;
-
-      try {
-        // Get the map bounds to fetch weather for the visible area
-        const bounds = this.$refs.map.map.getBounds();
-        const ne = bounds.getNorthEast();
-        const sw = bounds.getSouthWest();
-
-        // Example using OpenWeatherMap API (you'll need an API key)
-        const response = await fetch(
-          `https://api.openweathermap.org/data/2.5/box/city?bbox=${sw.lng()},${sw.lat()},${ne.lng()},${ne.lat()},10&appid=${
-            this.openWeatherApiKey
-          }`
-        );
-        if (!response.ok) {
-          throw new Error(`Weather API error: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        await this.displayWeatherOverlay(data);
-      } catch (error) {
-        console.error("Error fetching weather data:", error);
-        // Disable weather layer if there's an error
-        this.mapSettings.showWeather = false;
-      }
-    },
-
-    displayWeatherOverlay(weatherData) {
-      this.clearWeatherOverlay();
-
-      if (!weatherData.list || !Array.isArray(weatherData.list)) {
-        console.error("Invalid weather data format");
-        return;
-      }
-      // Create weather markers
-      weatherData.list.forEach((location) => {
-        const google = this.$refs.map?.map?.getMap()?.constructor;
-        if (!google) {
-          console.error("Google Maps API not available");
-          return;
-        }
-        const marker = new google.maps.Marker({
-          position: { lat: location.lat, lng: location.lon },
-          map: this.$refs.map.map,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 10,
-            fillColor: this.getWeatherColor(location.main.temp),
-            fillOpacity: 0.7,
-            strokeWeight: 1,
-          },
-        });
-
-        const infoWindow = new google.maps.InfoWindow({
-          content: `
-          <div class="weather-info">
-            <h3>${location.name}</h3>
-            <p>Temperature: ${this.kelvinToFahrenheit(location.main.temp)}°F</p>
-            <p>Conditions: ${location.weather[0].main}</p>
-            <p>Humidity: ${location.main.humidity}%</p>
-          </div>
-        `,
-        });
-        marker.addListener("click", () => {
-          infoWindow.open(this.$refs.map.map, marker);
-        });
-
-        this.weatherMarkers.push(marker);
-      });
-    },
-
-    clearWeatherOverlay() {
-      this.weatherMarkers.forEach((marker) => marker.setMap(null));
-      this.weatherMarkers = [];
-    },
-
-    getWeatherColor(kelvin) {
-      const celsius = kelvin - 273.15;
-      if (celsius < 0) return "#00ffff"; // Very cold
-      if (celsius < 10) return "#0099ff"; // Cold
-      if (celsius < 20) return "#00ff00"; // Cool
-      if (celsius < 30) return "#ffff00"; // Warm
-      return "#ff0000"; // Hot
-    },
+   
     kelvinToFahrenheit(kelvin) {
       return (((kelvin - 273.15) * 9) / 5 + 32).toFixed(1);
     },

@@ -75,7 +75,18 @@ export function getSignalStatus(satellites) {
   if (satellites >= SIGNAL_THRESHOLDS.FAIR) return 'fair';
   return 'poor';
 }
+export function formatTimeAgo(timestamp) {
+  if (!timestamp) return 'Never';
 
+  const now = new Date();
+  const then = new Date(timestamp);
+  const diffInSeconds = Math.floor((now - then) / 1000);
+
+  if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+  return `${Math.floor(diffInSeconds / 86400)}d ago`;
+}
 export function formatDuration(seconds) {
   if (!seconds) return '0s';
 
