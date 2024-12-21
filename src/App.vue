@@ -71,57 +71,71 @@
             </label>
           </div>
           <!-- Add this after your existing filter controls in the sidebar -->
-         <div class="mb-4">
-    <label class="block text-sm font-medium text-gray-700 mb-2">Device Status</label>
-    <div class="space-y-2">
-      <!-- Moving Devices Toggle -->
-      <label class="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
-        <span class="text-sm text-gray-600">Moving Devices</span>
-        <input
-          type="checkbox"
-          v-model="mapSettings.showMoving"
-          class="rounded text-blue-600"
-          @change="updateSettings({
-            key: 'showMoving',
-            value: mapSettings.showMoving
-          })"
-        />
-      </label>
-      
-      <!-- Stopped Devices Toggle -->
-      <label class="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
-        <span class="text-sm text-gray-600">Stopped Devices</span>
-        <input
-          type="checkbox"
-          v-model="mapSettings.showStopped"
-          class="rounded text-blue-600"
-          @change="updateSettings({
-            key: 'showStopped',
-            value: mapSettings.showStopped
-          })"
-        />
-      </label>
-      
-      <!-- Offline Devices Toggle -->
-      <label class="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
-        <span class="text-sm text-gray-600">Offline Devices</span>
-        <input
-          type="checkbox"
-          v-model="mapSettings.showOffline"
-          class="rounded text-blue-600"
-          @change="updateSettings({
-            key: 'showOffline',
-            value: mapSettings.showOffline
-          })"
-        />
-      </label>
-    </div>
-  </div>
-</div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2"
+              >Device Status</label
+            >
+            <div class="space-y-2">
+              <!-- Moving Devices Toggle -->
+              <label
+                class="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
+              >
+                <span class="text-sm text-gray-600">Moving Devices</span>
+                <input
+                  type="checkbox"
+                  v-model="mapSettings.showMoving"
+                  class="rounded text-blue-600"
+                  @change="
+                    updateSettings({
+                      key: 'showMoving',
+                      value: mapSettings.showMoving,
+                    })
+                  "
+                />
+              </label>
+
+              <!-- Stopped Devices Toggle -->
+              <label
+                class="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
+              >
+                <span class="text-sm text-gray-600">Stopped Devices</span>
+                <input
+                  type="checkbox"
+                  v-model="mapSettings.showStopped"
+                  class="rounded text-blue-600"
+                  @change="
+                    updateSettings({
+                      key: 'showStopped',
+                      value: mapSettings.showStopped,
+                    })
+                  "
+                />
+              </label>
+
+              <!-- Offline Devices Toggle -->
+              <label
+                class="flex items-center justify-between p-2 hover:bg-gray-50 rounded"
+              >
+                <span class="text-sm text-gray-600">Offline Devices</span>
+                <input
+                  type="checkbox"
+                  v-model="mapSettings.showOffline"
+                  class="rounded text-blue-600"
+                  @change="
+                    updateSettings({
+                      key: 'showOffline',
+                      value: mapSettings.showOffline,
+                    })
+                  "
+                />
+              </label>
+            </div>
+          </div>
+        </div>
         <!-- Device List -->
         <div class="space-y-2">
           <!-- Active/Moving Devices -->
-<div v-if="deviceGroups.active?.length" class="mb-4">
+          <div v-if="deviceGroups.active?.length" class="mb-4">
             <h3 class="text-sm font-medium text-gray-500 px-3 mb-2">
               Moving ({{ deviceGroups.active.length }})
             </h3>
@@ -210,7 +224,7 @@
           </div>
 
           <!-- Stopped Devices -->
-<div v-if="deviceGroups.stopped?.length" class="mb-4">
+          <div v-if="deviceGroups.stopped?.length" class="mb-4">
             <h3 class="text-sm font-medium text-gray-500 px-3 mb-2">
               Stopped ({{ deviceGroups.stopped.length }})
             </h3>
@@ -296,7 +310,7 @@
           </div>
 
           <!-- Inactive/Offline Devices -->
-<div v-if="deviceGroups.inactive?.length" class="mb-4">
+          <div v-if="deviceGroups.inactive?.length" class="mb-4">
             <h3 class="text-sm font-medium text-gray-500 px-3 mb-2">
               Offline ({{ deviceGroups.inactive.length }})
             </h3>
@@ -420,6 +434,7 @@
           :mapTypeId="mapSettings.mapType"
           class="w-full h-full"
           @ready="initializeLayers"
+          @click="handleMapClick"
         >
           <MapSettings
             v-if="showMapSettings"
@@ -428,25 +443,28 @@
             @close="showMapSettings = false"
           />
           <!-- Only render markers if showDevices is true -->
-         <template v-if="hasDevices && mapSettings.showDevices">
-  <template v-for="device in devices" :key="device.device_id">
-    <AdvancedMarker
-      :position="getDevicePosition(device)"
-      :title="device.display_name"
-      :device="device"
-      @click="handleMarkerClick(device)"
-      @register-marker="registerMarker"
-      @unregister-marker="unregisterMarker"
-    />
-    
-    <CustomInfoWindow
-      v-if="isDeviceSelected(device.device_id) && clickedDeviceId === device.device_id"
-      :device="device"
-      :position="getDevicePosition(device)"
-      @closeclick="handleInfoWindowClose"
-    />
-  </template>
-</template>
+          <template v-if="hasDevices && mapSettings.showDevices">
+            <template v-for="device in devices" :key="device.device_id">
+              <AdvancedMarker
+                :position="getDevicePosition(device)"
+                :title="device.display_name"
+                :device="device"
+                @click="handleMarkerClick(device)"
+                @register-marker="registerMarker"
+                @unregister-marker="unregisterMarker"
+              />
+
+              <CustomInfoWindow
+                v-if="
+                  isDeviceSelected(device.device_id) &&
+                  clickedDeviceId === device.device_id
+                "
+                :device="device"
+                :position="getDevicePosition(device)"
+                @closeclick="handleInfoWindowClose"
+              />
+            </template>
+          </template>
         </GoogleMap>
       </div>
     </div>
@@ -461,8 +479,8 @@ import { GoogleMap } from "vue3-google-map";
 import MapSettings from "./MapSettings.vue"; // Make sure path is correct
 import AdvancedMarker from "./components/AdvancedMarker.vue";
 import CustomInfoWindow from "./components/CustomInfoWindow.vue";
-
-import { formatTimeAgo, kmToMph, getDeviceMetrics } from "@/utils";
+import { kmToMph } from '@/utils/unitConversion'; 
+import { formatTimeAgo, getDeviceMetrics } from "@/services/deviceMetrics";
 import { getDeviceStatus } from "./utils/deviceStatus";
 
 import _ from "lodash";
@@ -479,10 +497,10 @@ export default {
   provide() {
     return {
       getDeviceStatus: this.getDeviceStatus,
-      mapSettings: computed(() => this.mapSettings),  // Make it reactive
+      mapSettings: computed(() => this.mapSettings), // Make it reactive
 
       getAddressForDevice: this.getAddressForDevice,
-      kmToMph: this.kmToMph,
+      kmToMph,
     };
   },
   data() {
@@ -562,41 +580,44 @@ export default {
       };
     },
     deviceGroups() {
-     const filteredDevices = this.sortedAndFilteredDevices.filter(device => {
-    const status = this.getDeviceStatus(device);
-    if (status.status === "Moving" && !this.mapSettings.showMoving) return false;
-    if (status.status === "Stopped" && !this.mapSettings.showStopped) return false;
-    if (status.status === "Offline" && !this.mapSettings.showOffline) return false;
-    return true;
-  });
+      const filteredDevices = this.sortedAndFilteredDevices.filter((device) => {
+        const status = this.getDeviceStatus(device);
+        if (status.status === "Moving" && !this.mapSettings.showMoving)
+          return false;
+        if (status.status === "Stopped" && !this.mapSettings.showStopped)
+          return false;
+        if (status.status === "Offline" && !this.mapSettings.showOffline)
+          return false;
+        return true;
+      });
 
-  return _.groupBy(filteredDevices, (device) => {
-    const status = this.getDeviceStatus(device);
-    if (status.status === "Moving") return "active";
-    if (status.status === "Stopped") return "stopped";
-    return "inactive";
-  });
+      return _.groupBy(filteredDevices, (device) => {
+        const status = this.getDeviceStatus(device);
+        if (status.status === "Moving") return "active";
+        if (status.status === "Stopped") return "stopped";
+        return "inactive";
+      });
     },
     sortedAndFilteredDevices() {
-  let filteredDevices = [...this.devices];
+      let filteredDevices = [...this.devices];
 
-  // Apply filters
-  filteredDevices = filteredDevices.filter((device) => {
-    const metrics = this.getDeviceMetrics(device);
-    const status = this.getDeviceStatus(device);
+      // Apply filters
+      filteredDevices = filteredDevices.filter((device) => {
+        const metrics = this.getDeviceMetrics(device);
+        const status = this.getDeviceStatus(device);
 
-    // First check device status filters using mapSettings
-    switch (status.status) {
-      case "Moving":
-        if (!this.mapSettings.showMoving) return false;
-        break;
-      case "Stopped":
-        if (!this.mapSettings.showStopped) return false;
-        break;
-      case "Offline":
-        if (!this.mapSettings.showOffline) return false;
-        break;
-    }
+        // First check device status filters using mapSettings
+        switch (status.status) {
+          case "Moving":
+            if (!this.mapSettings.showMoving) return false;
+            break;
+          case "Stopped":
+            if (!this.mapSettings.showStopped) return false;
+            break;
+          case "Offline":
+            if (!this.mapSettings.showOffline) return false;
+            break;
+        }
 
         if (this.filters.ignitionOn && !metrics.ignitionOn) return false;
         if (this.filters.ignitionOff && metrics.ignitionOn) return false;
@@ -682,56 +703,65 @@ export default {
       return filteredDevices;
     },
   },
- watch: {
-  'mapSettings.showMoving'() {
-    this.updateMarkersVisibility();
-  },
-  'mapSettings.showStopped'() {
-    this.updateMarkersVisibility();
-  },
-  'mapSettings.showOffline'() {
-    this.updateMarkersVisibility();
-  },
-  'mapSettings.showDevices'() {
-    this.updateMarkersVisibility(); // Use the same method for all visibility toggles
-  },
-  'mapSettings.showTraffic': {
-    handler() {
-      this.$nextTick(() => {
-        if (this.$refs.map?.map) {
-          this.toggleTrafficLayer();
-        }
-      });
+  watch: {
+    "mapSettings.showMoving"() {
+      this.updateMarkersVisibility();
     },
-    immediate: true,
+    "mapSettings.showStopped"() {
+      this.updateMarkersVisibility();
+    },
+    "mapSettings.showOffline"() {
+      this.updateMarkersVisibility();
+    },
+    "mapSettings.showDevices"() {
+      this.updateMarkersVisibility(); 
+    },
+    "mapSettings.showTraffic": {
+      handler() {
+        this.$nextTick(() => {
+          if (this.$refs.map?.map) {
+            this.toggleTrafficLayer();
+          }
+        });
+      },
+      immediate: true,
+    },
   },
-},
   methods: {
     registerMarker(deviceId, marker) {
       this.markerRefs.set(deviceId, marker);
     },
-
+    handleMapClick(event) {
+      // Only close if clicking on the map itself, not on markers
+      if (!event.placeId && !event.vertex && !event.edge) {
+        this.clickedDeviceId = null;
+        this.selectDevice(null);
+      }
+    },
     unregisterMarker(deviceId) {
       this.markerRefs.delete(deviceId);
     },
-updateMarkersVisibility() {
-  this.devices.forEach(device => {
-    const marker = this.markerRefs.get(device.device_id);
-    if (!marker) return;
+    updateMarkersVisibility() {
+      this.devices.forEach((device) => {
+        const marker = this.markerRefs.get(device.device_id);
+        if (!marker) return;
 
-    const status = this.getDeviceStatus(device);
-    let shouldShow = false;
+        const status = this.getDeviceStatus(device);
+        let shouldShow = false;
 
-    // First check if devices are shown at all
-    if (this.mapSettings.showDevices) {
-      // Then check individual status toggles
-      if (status.status === "Moving" && this.mapSettings.showMoving) shouldShow = true;
-      if (status.status === "Stopped" && this.mapSettings.showStopped) shouldShow = true;
-      if (status.status === "Offline" && this.mapSettings.showOffline) shouldShow = true;
-    }
+        // First check if devices are shown at all
+        if (this.mapSettings.showDevices) {
+          // Then check individual status toggles
+          if (status.status === "Moving" && this.mapSettings.showMoving)
+            shouldShow = true;
+          if (status.status === "Stopped" && this.mapSettings.showStopped)
+            shouldShow = true;
+          if (status.status === "Offline" && this.mapSettings.showOffline)
+            shouldShow = true;
+        }
 
-    marker.setVisible(shouldShow);
-  });
+        marker.setVisible(shouldShow);
+      });
     },
     updateVisibility(visible) {
       if (this.marker) {
@@ -749,9 +779,11 @@ updateMarkersVisibility() {
       "fetchDevices",
       "selectDevice",
       "updateAddress",
-      "setWebsocketConnected",
+      "updateDeviceSettings",
     ]),
-    getDeviceStatus, // Add this line
+    
+    getDeviceStatus,
+    
     initializeMarker() {
       if (!window.google?.maps || !this.$parent.map) return;
 
@@ -792,23 +824,6 @@ updateMarkersVisibility() {
 
         await this.initializeMap();
         this.map = this.$refs.map.map;
-
-        // Add map click listener with event parameter
-        if (this.map) {
-          this.map.addListener("click", (event) => {
-            // Check if the click was on a marker
-            if (event.placeId || event.vertex || event.edge) {
-              // Click was on a map feature (like a marker), don't close
-              return;
-            }
-
-            // Close any open info window
-            if (this.clickedDeviceId) {
-              this.clickedDeviceId = null;
-              this.selectDevice(null);
-            }
-          });
-        }
 
         if (this.mapSettings.showTraffic) {
           await this.initializeTrafficLayer();
@@ -930,7 +945,8 @@ updateMarkersVisibility() {
       }
     },
     handleSidebarDeviceClick(device) {
-      // Select the device
+      // Set both the clickedDeviceId and select the device
+      this.clickedDeviceId = device.device_id;
       this.selectDevice(device.device_id);
 
       // Get and update the position
@@ -1251,17 +1267,17 @@ updateMarkersVisibility() {
       this.animationQueue.set(device.device_id, frameId);
     },
 
-    saveMapSettings() {
-      localStorage.setItem("mapSettings", JSON.stringify(this.mapSettings));
-    },
-    loadMapSettings() {
-      const settings = localStorage.getItem("mapSettings");
-      if (settings) {
-        const loadedSettings = JSON.parse(settings);
-        // Merge loaded settings into existing mapSettings to avoid reactivity issues
-        Object.assign(this.mapSettings, loadedSettings);
-      }
-    },
+    // saveMapSettings() {
+    //   localStorage.setItem("mapSettings", JSON.stringify(this.mapSettings));
+    // },
+    // loadMapSettings() {
+    //   const settings = localStorage.getItem("mapSettings");
+    //   if (settings) {
+    //     const loadedSettings = JSON.parse(settings);
+    //     // Merge loaded settings into existing mapSettings to avoid reactivity issues
+    //     Object.assign(this.mapSettings, loadedSettings);
+    //   }
+    // },
     updateMapSettings(key, value) {
       if (this.mapSettings[key] !== value) {
         this.mapSettings[key] = value;
@@ -1272,51 +1288,39 @@ updateMarkersVisibility() {
     created() {
       this.loadMapSettings();
     },
-    updateMarkerVisibility() {
-      if (this.devices) {
-        this.devices.forEach((device) => {
-          const marker = this.markerRefs.get(device.device_id);
-          if (marker) {
-            // Update the marker visibility
-            marker.setVisible(this.mapSettings.showDevices);
-          }
-        });
-      }
-    },
+    // updateMarkerVisibility() {
+    //   if (this.devices) {
+    //     this.devices.forEach((device) => {
+    //       const marker = this.markerRefs.get(device.device_id);
+    //       if (marker) {
+    //         // Update the marker visibility
+    //         marker.setVisible(this.mapSettings.showDevices);
+    //       }
+    //     });
+    //   }
+    // },
 
-    fetchInitialData() {
-      fetch("http://localhost:8080/api/v1/devices")
-        .then((response) => response.json())
-        .then((data) => {
-          if (data && Array.isArray(data)) {
-            this.devices = data;
-            this.devices = [...this.devices]; // Ensure reactivity
-            console.log("Initial device data fetched:", this.devices);
-          }
-        })
-        .catch((error) => {
-          console.error("Error fetching initial device data:", error);
-        });
-    },
+    // fetchInitialData() {
+    //   fetch("http://localhost:8080/api/v1/devices")
+    //     .then((response) => response.json())
+    //     .then((data) => {
+    //       if (data && Array.isArray(data)) {
+    //         this.devices = data;
+    //         this.devices = [...this.devices]; // Ensure reactivity
+    //         console.log("Initial device data fetched:", this.devices);
+    //       }
+    //     })
+    //     .catch((error) => {
+    //       console.error("Error fetching initial device data:", error);
+    //     });
+    // },
   },
 
   // Lifecycle hooks
   async mounted() {
     try {
-      console.log("App mounted");
       await this.loadSettings();
-      console.log("Settings loaded:", this.mapSettings);
-
-      // Initial fetch with more debugging
-      const initialDevices = await this.fetchDevices();
-      console.log("Initial fetch response:", initialDevices);
-      console.log(
-        "Devices in store after fetch:",
-        this.$store.state.devices.devices
-      );
-      console.log("Has devices?", this.hasDevices);
-
-      // Start polling for updates
+      await this.fetchDevices();
       this.startPolling();
       this.startTimer();
     } catch (error) {

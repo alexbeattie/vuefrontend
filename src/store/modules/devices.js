@@ -1,5 +1,5 @@
 // store/modules/devices.js
-
+import { apiService } from '@/services/api';
 const state = () => ({
   devices: [],
   selectedDevice: null,
@@ -71,14 +71,9 @@ const actions = {
     commit('SET_LOADING', true);
     try {
       console.log('Fetching devices from Go server...');
-      const response = await fetch('http://localhost:8080/api/v1/devices');
-      console.log('Response status:', response.status);
+     
+      const data = await apiService.getDevices();
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
 
       let devicesToProcess = [];
 
@@ -202,8 +197,19 @@ const actions = {
     } catch (error) {
       console.error('Failed to load geocoding cache', error);
     }
+  },
+  async fetchSingleDevice({ commit }, deviceId) {
+    try {
+      const device = await apiService.getDevice(deviceId);
+      commit('UPDATE_DEVICE', device);
+      return device;
+    } catch (error) {
+      console.error(`Error fetching device ${deviceId}:`, error);
+      commit('SET_ERROR', error.message);
+    }
   }
 };
+
 
 
 const getters = {
