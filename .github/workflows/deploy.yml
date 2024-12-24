@@ -1,0 +1,53 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - main  # Adjust this to your deployment branch
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'  # Adjust the Node.js version if needed
+
+      # Step 3: Install Yarn
+      - name: Install Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@stable --activate
+
+      # Step 4: Install dependencies and build Vue.js app with Yarn
+      - name: Install dependencies and build
+        run: |
+          yarn install
+          yarn build
+
+      # Step 5: Transfer files to EC2
+      - name: Deploy to EC2
+        uses: appleboy/scp-action@v0.1.5
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "dist/*"
+          target: "/usr/share/nginx/html"
+
+      # Step 6: Restart Nginx (optional if Nginx configuration needs reload)
+      - name: Restart Nginx
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo systemctl restart nginx
